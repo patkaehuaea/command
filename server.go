@@ -1,21 +1,20 @@
 /* Copyright (C) Pat Kaehuaea - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
- * Written by Elmer Fudd <efudd@yoyodyne.com>, September 1943
+ * Written by Pat Kaehuaea, January 2015
  */
-
 
 package main
 
 import (
 	"flag"
-	"net/http"
-	"html/template"
 	"fmt"
+	"github.com/gorilla/mux"
+	"html/template"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
-	"github.com/gorilla/mux"
 )
 
 //credit: http://stackoverflow.com/questions/17206467/go-how-to-render-multiple-templates-in-golang
@@ -58,8 +57,8 @@ func main() {
 
 	//credit: http://stackoverflow.com/questions/9996767/showing-custom-404-error-page-with-standard-http-package
 	r := mux.NewRouter()
-    r.HandleFunc("/time", timeHandler)
-    r.NotFoundHandler = http.HandlerFunc(notFound)
-    http.Handle("/", r)
+	r.HandleFunc("/time", timeHandler)
+	r.NotFoundHandler = http.HandlerFunc(notFound)
+	http.Handle("/", r)
 	http.ListenAndServe(portString, nil)
 }
