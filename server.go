@@ -31,6 +31,7 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func notFound(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotFound)
 	templates.ExecuteTemplate(w, "http404", nil)
 }
 
@@ -55,5 +56,3 @@ func main() {
     http.Handle("/", r)
 	http.ListenAndServe(portString, nil)
 }
-
-
