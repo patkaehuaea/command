@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
+	log "github.com/Sirupsen/logrus"
 	"html/template"
 	"net/http"
 	"os"
@@ -33,17 +34,31 @@ func getTime() string {
 }
 
 func timeHandler(w http.ResponseWriter, r *http.Request) {
+	logInfo("Time handler called.", r)
 	templates.ExecuteTemplate(w, "time", getTime())
 }
 
 func notFound(w http.ResponseWriter, r *http.Request) {
+	logInfo("Not found handler called.", r)
 	w.WriteHeader(http.StatusNotFound)
 	templates.ExecuteTemplate(w, "http404", nil)
 }
 
+func logInfo(msg string, r *http.Request) {
+	log.WithFields(log.Fields{
+		"method": r.Method,
+		"time": getTime(),
+		"url": r.URL,
+	}).Info(msg)
+}
+
+func init() {
+	log.SetOutput(os.Stdout)
+	log.SetLevel(log.DebugLevel)
+}
 func main() {
 
-	const VERSION_NUMBER = "v1.0.0"
+	const VERSION_NUMBER = "v1.0.1"
 
 	portPtr := flag.String("port", "8080", "Web server binds to this port. Default is 8080.")
 	verbosePtr := flag.Bool("V", false, "Prints version number of program.")
@@ -54,6 +69,9 @@ func main() {
 		fmt.Printf("Version number: %s \n", VERSION_NUMBER)
 		os.Exit(1)
 	}
+
+
+
 
 	//credit: http://stackoverflow.com/questions/9996767/showing-custom-404-error-page-with-standard-http-package
 	r := mux.NewRouter()
