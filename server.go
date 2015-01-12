@@ -16,6 +16,8 @@ import (
 	"path/filepath"
 	"time"
 )
+const localFormat = "3:04:05 PM"
+const UTCFormat = "15:04:05 UTC"
 
 //credit: http://stackoverflow.com/questions/17206467/go-how-to-render-multiple-templates-in-golang
 var templates = template.Must(template.ParseGlob(htmlTemplPath()))
@@ -26,14 +28,9 @@ func htmlTemplPath() string {
 	return templatesPath
 }
 
-func getTime() string {
-	const layout = "3:04:05 PM"
-	t := time.Now().Format(layout)
-	return t
-}
-
 func timeHandler(w http.ResponseWriter, r *http.Request) {
-	templates.ExecuteTemplate(w, "time", getTime())
+	params := map[string]interface{}{"localTime": time.Now().Format(localFormat), "UTCTime": time.Now().Format(UTCFormat)}
+	templates.ExecuteTemplate(w, "time", params)
 }
 
 func notFound(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +40,7 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	const VERSION_NUMBER = "v1.0.0"
+	const VERSION_NUMBER = "v1.0.1"
 
 	portPtr := flag.String("port", "8080", "Web server binds to this port. Default is 8080.")
 	verbosePtr := flag.Bool("V", false, "Prints version number of program.")
