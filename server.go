@@ -5,6 +5,7 @@
  */
 
  // TODO: Extend Cookie Struct
+ // TODO: Determine if logout needs to have user removed from map.
 
 package main
 
@@ -179,7 +180,7 @@ func init() {
 }
 func main() {
 
-	const VERSION_NUMBER = "v1.0.3"
+	const VERSION_NUMBER = "v1.0.4"
 
 	portPtr := flag.String("port", "8080", "Web server binds to this port. Default is 8080.")
 	verbosePtr := flag.Bool("V", false, "Prints version number of program.")
@@ -193,11 +194,11 @@ func main() {
 
 	//credit: http://stackoverflow.com/questions/9996767/showing-custom-404-error-page-with-standard-http-package
 	r := mux.NewRouter()
-	r.HandleFunc("/", defaultHandler)
-	r.HandleFunc("/index.html", defaultHandler)
-	r.HandleFunc("/login", loginHandler)
-	r.HandleFunc("/logout", logoutHandler)
-	r.HandleFunc("/time", timeHandler)
+	go r.HandleFunc("/", defaultHandler)
+	go r.HandleFunc("/index.html", defaultHandler)
+	go r.HandleFunc("/login", loginHandler)
+	go r.HandleFunc("/logout", logoutHandler)
+	go r.HandleFunc("/time", timeHandler)
 	r.NotFoundHandler = http.HandlerFunc(notFound)
 	http.Handle("/", r)
 	http.ListenAndServe(portString, nil)
