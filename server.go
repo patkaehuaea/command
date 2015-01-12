@@ -9,6 +9,7 @@
 package main
 
 import (
+ 	"errors"
 	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -22,6 +23,8 @@ import (
 	"sync"
 	"time"
 )
+
+const COOKIE_NAME = "uuid"
 
 // credit: http://stackoverflow.com/questions/17206467/go-how-to-render-multiple-templates-in-golang
 var templates = template.Must(template.ParseGlob(htmlTemplPath()))
@@ -60,7 +63,7 @@ func uuid() string {
 }
 
 // credit: https://blog.golang.org/go-maps-in-action
-func findUser(uuid string) string {
+func findName(uuid string) string {
 	users.RLock()
 	name := users.m[uuid]
 	users.RUnlock()
@@ -68,7 +71,7 @@ func findUser(uuid string) string {
 }
 
 // credit: https://blog.golang.org/go-maps-in-action
-func addUser(uuid string, name string) bool {
+func addName(uuid string, name string) bool {
 	if validateName(name) {
 		users.Lock()
 		users.m[uuid] = name
@@ -84,8 +87,27 @@ func validateName(name string) bool {
 	return true
 }
 
+func uuidToName(r *http.Request) (uName string, err error) {
+	log.Debug("Reading cookie 'uuid' and finding name.")
+
+	cookie, err := r.Cookie(COOKIE_NAME)
+	// TODO: Implement additional cookie validation
+	// like domain and expiry in own method.
+	if err == http.ErrNoCookie {
+		return "", http.ErrNoCookie
+	}
+
+	name := findName(cookie.Value)
+	
+	if name == "" {
+        return "", errors.New("Cookie value not found in user table.")
+	}
+
+	return name, nil
+}
+
 func setCookie(w http.ResponseWriter, uuid string) {
-	c := http.Cookie {Name: "GUID", Value: uuid, Path: "/"}
+	c := http.Cookie {Name: COOKIE_NAME, Value: uuid, Path: "/"}
 	http.SetCookie(w, &c)
 }
 
@@ -94,30 +116,20 @@ func setCookie(w http.ResponseWriter, uuid string) {
 func deleteCookie(w http.ResponseWriter) {
 	log.Debug("Deleting cookie.")
 	// Invalidate data along and set MaxAge to avoid accidental persistence issues.
-	c := http.Cookie {Name: "GUID", Value: "deleted", Path: "/", MaxAge: -1}
+	c := http.Cookie {Name: COOKIE_NAME, Value: "deleted", Path: "/", MaxAge: -1}
 	http.SetCookie(w, &c)
 }
 
 func defaultHandler(w http.ResponseWriter, r *http.Request) {
 	logInfo("Default handler called.", r)
 	
-	cookie, err := r.Cookie("GUID")
-	// TODO: Implement additional cookie validation
-	// like domain and expiry in own method.
-	if err == http.ErrNoCookie || cookie.Value == "" {
-		log.Debug("No cookie or empty value. Redirecting to login.")
+	name, err := uuidToName(r)
+	if name == "" || err != nil {
+		log.Debug("No cookie found or value empty. Redirecting to login.")
 		http.Redirect(w, r, "/login", http.StatusFound)
-        return
-	}
-	name := findUser(cookie.Value)
-	log.Debug("Cookie GUID corresponds to name: " + name)
-
-	if name == "" {
-		log.Debug("User not found. Redirecting to login.")
-		http.Redirect(w, r, "/login", http.StatusFound)
-        return
 	}
 
+	log.Debug("Cookie uuid found in user table: " + name)
 	templates.ExecuteTemplate(w, "greetings", name)
 }
 
@@ -135,7 +147,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		name := r.FormValue("name")
 		if validateName(name) {
 			uuid := uuid()
-			addUser(uuid, name)
+			addName(uuid, name)
 			setCookie(w, uuid)
 			http.Redirect(w, r, "/", http.StatusFound)
 	        return
@@ -158,7 +170,11 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 func timeHandler(w http.ResponseWriter, r *http.Request) {
 	logInfo("Time handler called.", r)
-	templates.ExecuteTemplate(w, "time", getTime())
+	name, _ := uuidToName(r)
+	// No error checking for name since logic implemented
+	// in template.
+	params := map[string]interface{}{"time": getTime(), "name": name}
+	templates.ExecuteTemplate(w, "time", params)
 }
 
 func notFound(w http.ResponseWriter, r *http.Request) {
