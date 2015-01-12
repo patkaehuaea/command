@@ -7,7 +7,7 @@ span.time {color: red}
 </style>
 </head>
 <body>
-<p>The time is now <span class="time">{{.}}</span>.</p>
+<p>The time is now <span class="time">{{.time}}</span>{{if .name}}, {{.name}}.{{else}}.{{end}}</p>
 </body>
 </html>
 {{end}}
