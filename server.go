@@ -137,12 +137,13 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug("Login handler called.")
 
 	if(r.Method == "GET") {
+		log.Debug("Login GET method detected.")
 		templates.ExecuteTemplate(w, "login", nil)
 		log.Debug("Login template rendered.")
 	}
 
 	if(r.Method == "POST") {
-		log.Debug("POST method detected.")
+		log.Debug("Login POST method detected.")
 		// Form will not submit if name empty.
 		name := r.FormValue("name")
 		if validateName(name) {
