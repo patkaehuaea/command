@@ -181,7 +181,7 @@ func init() {
 }
 func main() {
 
-	const VERSION_NUMBER = "v1.0.1"
+	const VERSION_NUMBER = "v1.0.2"
 
 	portPtr := flag.String("port", "8080", "Web server binds to this port. Default is 8080.")
 	verbosePtr := flag.Bool("V", false, "Prints version number of program.")
