@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 )
-
+const localFormat = "3:04:05 PM"
 const COOKIE_NAME = "uuid"
 
 // credit: http://stackoverflow.com/questions/17206467/go-how-to-render-multiple-templates-in-golang
@@ -39,12 +39,6 @@ func htmlTemplPath() string {
 	curDir, _ := os.Getwd()
 	templatesPath := filepath.Join(curDir, "templates", "*.html")
 	return templatesPath
-}
-
-func getTime() string {
-	const layout = "3:04:05 PM"
-	t := time.Now().Format(layout)
-	return t
 }
 
 func uuid() string {
@@ -174,7 +168,7 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 	name, _ := uuidToName(r)
 	// No error checking for name since logic implemented
 	// in template.
-	params := map[string]interface{}{"time": getTime(), "name": name}
+	params := map[string]interface{}{"time": time.Now().Format(localFormat), "name": name}
 	templates.ExecuteTemplate(w, "time", params)
 }
 
@@ -187,7 +181,7 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 func logInfo(msg string, r *http.Request) {
 	log.WithFields(log.Fields{
 		"method": r.Method,
-		"time": getTime(),
+		"time": time.Now().Format(localFormat),
 		"url": r.URL,
 	}).Info(msg)
 }
