@@ -1,7 +1,19 @@
 {{define "login"}}
+<!-- source: http://www.w3schools.com/js/js_form_validation.asp -->
 <html>
+<head>
+<script>
+function validateForm() {
+    var x = document.forms["earthling_login"]["name"].value;
+    if (x==null || x=="") {
+        alert("C'mon, I need a name.");
+        return false;
+    }
+}
+</script>
+</head>
 <body>
-<form action="login">
+<form name="earthling_login" action="login" onsubmit="return validateForm()" method="post">
   What is your name, Earthling?
   <input type="text" name="name" size="50">
   <input type="submit">
