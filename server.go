@@ -4,6 +4,8 @@
  * Written by Pat Kaehuaea, January 2015
  */
 
+ // TODO: Extend Cookie Struct
+
 package main
 
 import (
@@ -14,12 +16,21 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
+	"sync"
 	"time"
 )
 
-//credit: http://stackoverflow.com/questions/17206467/go-how-to-render-multiple-templates-in-golang
+// credit: http://stackoverflow.com/questions/17206467/go-how-to-render-multiple-templates-in-golang
 var templates = template.Must(template.ParseGlob(htmlTemplPath()))
+
+// credit: https://blog.golang.org/go-maps-in-action
+var users = struct{
+    sync.RWMutex
+    m map[string]string
+}{m: make(map[string]string)}
 
 func htmlTemplPath() string {
 	curDir, _ := os.Getwd()
@@ -33,6 +44,118 @@ func getTime() string {
 	return t
 }
 
+func uuid() string {
+	// credit: http://golang.org/pkg/os/exec/#Cmd.Run
+	log.Debug("Getting uuid.")
+	out, err := exec.Command("/usr/bin/uuidgen").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Debug("Removing trailing '\n' from output. ")
+	uuid := strings.TrimSuffix(string(out), "\n")
+
+	log.Debug("Output of uuid generator: " + uuid)
+	return uuid
+}
+
+// credit: https://blog.golang.org/go-maps-in-action
+func findUser(uuid string) string {
+	users.RLock()
+	name := users.m[uuid]
+	users.RUnlock()
+	return name
+}
+
+// credit: https://blog.golang.org/go-maps-in-action
+func addUser(uuid string, name string) bool {
+	if validateName(name) {
+		users.Lock()
+		users.m[uuid] = name
+		users.Unlock()
+		return true
+	}
+	return false
+}
+
+func validateName(name string) bool {
+	// TODO: better to implement in form?
+	// TODO: implement name validation
+	return true
+}
+
+func setCookie(w http.ResponseWriter, uuid string) {
+	c := http.Cookie {Name: "GUID", Value: uuid, Path: "/"}
+	http.SetCookie(w, &c)
+}
+
+// Duplicate cookies are not handled as it should not be possible as
+// login with name sets cookie and overwrites.
+func deleteCookie(w http.ResponseWriter) {
+	log.Debug("Deleting cookie.")
+	// Invalidate data along and set MaxAge to avoid accidental persistence issues.
+	c := http.Cookie {Name: "GUID", Value: "deleted", Path: "/", MaxAge: -1}
+	http.SetCookie(w, &c)
+}
+
+func defaultHandler(w http.ResponseWriter, r *http.Request) {
+	logInfo("Default handler called.", r)
+	
+	cookie, err := r.Cookie("GUID")
+	// TODO: Implement additional cookie validation
+	// like domain and expiry in own method.
+	if err == http.ErrNoCookie || cookie.Value == "" {
+		log.Debug("No cookie or empty value. Redirecting to login.")
+		http.Redirect(w, r, "/login", http.StatusFound)
+        return
+	}
+	name := findUser(cookie.Value)
+	log.Debug("Cookie GUID corresponds to name: " + name)
+
+	if name == "" {
+		log.Debug("User not found. Redirecting to login.")
+		http.Redirect(w, r, "/login", http.StatusFound)
+        return
+	}
+
+	templates.ExecuteTemplate(w, "greetings", name)
+}
+
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	log.Debug("Login handler called.")
+
+	if(r.Method == "GET") {
+		templates.ExecuteTemplate(w, "login", nil)
+		log.Debug("Login template rendered.")
+	}
+
+	if(r.Method == "POST") {
+		log.Debug("POST method detected.")
+		// Form will not submit if name empty.
+		name := r.FormValue("name")
+		if validateName(name) {
+			uuid := uuid()
+			addUser(uuid, name)
+			setCookie(w, uuid)
+			http.Redirect(w, r, "/", http.StatusFound)
+	        return
+		} else {
+			// Redirect user with 4xx status code.
+			log.Debug("Invalid username. Redirecting to root.")
+			w.WriteHeader(http.StatusBadRequest )
+			http.Redirect(w, r, "/", http.StatusFound)
+		}
+	}
+
+	log.Debug("Request method not handled.")
+}
+
+func logoutHandler(w http.ResponseWriter, r *http.Request) {
+	log.Debug("Logout handler called.")
+	deleteCookie(w)
+	templates.ExecuteTemplate(w, "logged-out.html", nil)
+}
+
 func timeHandler(w http.ResponseWriter, r *http.Request) {
 	logInfo("Time handler called.", r)
 	templates.ExecuteTemplate(w, "time", getTime())
@@ -41,7 +164,7 @@ func timeHandler(w http.ResponseWriter, r *http.Request) {
 func notFound(w http.ResponseWriter, r *http.Request) {
 	logInfo("Not found handler called.", r)
 	w.WriteHeader(http.StatusNotFound)
-	templates.ExecuteTemplate(w, "http404", nil)
+	templates.ExecuteTemplate(w, "404", nil)
 }
 
 func logInfo(msg string, r *http.Request) {
@@ -70,11 +193,12 @@ func main() {
 		os.Exit(1)
 	}
 
-
-
-
 	//credit: http://stackoverflow.com/questions/9996767/showing-custom-404-error-page-with-standard-http-package
 	r := mux.NewRouter()
+	r.HandleFunc("/", defaultHandler)
+	r.HandleFunc("/index.html", defaultHandler)
+	r.HandleFunc("/login", loginHandler)
+	r.HandleFunc("/logout", logoutHandler)
 	r.HandleFunc("/time", timeHandler)
 	r.NotFoundHandler = http.HandlerFunc(notFound)
 	http.Handle("/", r)
