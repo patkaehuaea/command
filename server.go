@@ -21,7 +21,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"html/template"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -122,7 +121,7 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 func logInfo(msg string, r *http.Request) {
 	log.WithFields(log.Fields{
 		"method": r.Method,
-		"time":   time.Now().Format(localFormat),
+		"time":   time.Now().Format(timeLayout),
 		"url":    r.URL,
 	}).Info(msg)
 }
@@ -139,7 +138,12 @@ func setCookie(w http.ResponseWriter, uuid string, maxAge int) {
 }
 
 func timeHandler(w http.ResponseWriter, r *http.Request) {
-	templates.ExecuteTemplate(w, "time.html", time.Now().Format(timeLayout))
+	logInfo("Time handler called.", r)
+	name, _ := uuidCookieToName(r)
+	// No error checking for name since logic implemented
+	// in template.
+	params := map[string]interface{}{"time": time.Now().Format(timeLayout), "name": name}
+	templates.ExecuteTemplate(w, "time.html", params)
 }
 
 func uuid() string {
