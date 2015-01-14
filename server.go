@@ -29,16 +29,9 @@ const UTCFormat = "15:04:05 UTC"
 var cwd, _ = os.Getwd()
 var templates = template.Must(template.ParseGlob(filepath.Join(cwd, "templates", "*.html")))
 
-<<<<<<< HEAD
 func timeHandler(w http.ResponseWriter, r *http.Request) {
 	params := map[string]interface{}{"localTime": time.Now().Format(localFormat), "UTCTime": time.Now().Format(UTCFormat)}
-	templates.ExecuteTemplate(w, "time", params)
-=======
-const timeLayout = "3:04:05 PM"
-
-func timeHandler(w http.ResponseWriter, r *http.Request) {
-	templates.ExecuteTemplate(w, "time.html", time.Now().Format(timeLayout))
->>>>>>> 939a6e56308f750ae71655dfa43822df1bb16270
+	templates.ExecuteTemplate(w, "time.html", params)
 }
 
 func notFound(w http.ResponseWriter, r *http.Request) {
