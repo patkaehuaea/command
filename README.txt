@@ -3,7 +3,7 @@ Instructions for running server:
 $ cd $GOPATH/src/github.com/patkaehuaea/server
 $ go build
 $ go install
-$GOPATH/bin/server
+$ GOPATH/bin/server
 
 To view the version number:
 
