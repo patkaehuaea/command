@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"html/template"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -57,5 +58,5 @@ func main() {
 	r.HandleFunc("/time", timeHandler)
 	r.NotFoundHandler = http.HandlerFunc(notFound)
 	http.Handle("/", r)
-	http.ListenAndServe(portParam, nil)
+	log.Fatal(http.ListenAndServe(portParam, nil))
 }
