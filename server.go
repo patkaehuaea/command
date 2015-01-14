@@ -55,19 +55,6 @@ func addName(uuid string, name string) bool {
 	return false
 }
 
-func defaultHandler(w http.ResponseWriter, r *http.Request) {
-	logInfo("Default handler called.", r)
-
-	name, err := uuidCookieToName(r)
-	if name == "" || err != nil {
-		log.Debug("No cookie found or value empty. Redirecting to login.")
-		http.Redirect(w, r, "/login", http.StatusFound)
-	}
-
-	log.Debug("Cookie uuid found in user table: " + name)
-	templates.ExecuteTemplate(w, "greetings", name)
-}
-
 // credit: https://blog.golang.org/go-maps-in-action
 func findName(uuid string) string {
 	users.RLock()
@@ -81,7 +68,20 @@ func init() {
 	log.SetLevel(log.DebugLevel)
 }
 
-func loginHandler(w http.ResponseWriter, r *http.Request) {
+func handleDefault(w http.ResponseWriter, r *http.Request) {
+	logInfo("Default handler called.", r)
+
+	name, err := uuidCookieToName(r)
+	if name == "" || err != nil {
+		log.Debug("No cookie found or value empty. Redirecting to login.")
+		http.Redirect(w, r, "/login", http.StatusFound)
+	}
+
+	log.Debug("Cookie uuid found in user table: " + name)
+	templates.ExecuteTemplate(w, "greetings", name)
+}
+
+func handleLogin(w http.ResponseWriter, r *http.Request) {
 	log.Debug("Login handler called.")
 
 	if r.Method == "GET" {
@@ -111,11 +111,20 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug("Request method not handled.")
 }
 
-func logoutHandler(w http.ResponseWriter, r *http.Request) {
+func handleLogout(w http.ResponseWriter, r *http.Request) {
 	log.Debug("Logout handler called.")
 	// Invalidate data along and set MaxAge to avoid accidental persistence issues.
 	setCookie(w, "deleted", -1)
 	templates.ExecuteTemplate(w, "logged-out.html", nil)
+}
+
+func handleTime(w http.ResponseWriter, r *http.Request) {
+	logInfo("Time handler called.", r)
+	name, _ := uuidCookieToName(r)
+	// No error checking for name since logic implemented
+	// in template.
+	params := map[string]interface{}{"time": time.Now().Format(timeLayout), "name": name}
+	templates.ExecuteTemplate(w, "time.html", params)
 }
 
 func logInfo(msg string, r *http.Request) {
@@ -137,14 +146,7 @@ func setCookie(w http.ResponseWriter, uuid string, maxAge int) {
 	http.SetCookie(w, &c)
 }
 
-func timeHandler(w http.ResponseWriter, r *http.Request) {
-	logInfo("Time handler called.", r)
-	name, _ := uuidCookieToName(r)
-	// No error checking for name since logic implemented
-	// in template.
-	params := map[string]interface{}{"time": time.Now().Format(timeLayout), "name": name}
-	templates.ExecuteTemplate(w, "time.html", params)
-}
+
 
 func uuid() string {
 	// credit: http://golang.org/pkg/os/exec/#Cmd.Run
@@ -202,11 +204,11 @@ func main() {
 	// The gorilla web toolkit (http://www.gorillatoolkit.org/) seems like it provides a cleaner way
 	// to handle notFound and provides some additional functionality.
 	r := mux.NewRouter()
-	go r.HandleFunc("/", defaultHandler)
-	go r.HandleFunc("/index.html", defaultHandler)
-	go r.HandleFunc("/login", loginHandler)
-	go r.HandleFunc("/logout", logoutHandler)
-	go r.HandleFunc("/time", timeHandler)
+	go r.HandleFunc("/", handleDefault)
+	go r.HandleFunc("/index.html", handleDefault)
+	go r.HandleFunc("/login", handleLogin)
+	go r.HandleFunc("/logout", handleLogout)
+	go r.HandleFunc("/time", handleTime)
 	r.NotFoundHandler = http.HandlerFunc(notFound)
 	http.Handle("/", r)
 	log.Fatal(http.ListenAndServe(portParam, nil))
