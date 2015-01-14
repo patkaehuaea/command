@@ -22,7 +22,7 @@ import (
 	"time"
 )
 
-//credit: http://stackoverflow.com/questions/17206467/go-how-to-render-multiple-templates-in-golang
+// Program expects html template directory to be in same path as executable is run.
 var cwd, _ = os.Getwd()
 var templates = template.Must(template.ParseGlob(filepath.Join(cwd, "templates", "*.html")))
 
@@ -43,20 +43,19 @@ func main() {
 
 	portPtr := flag.String("port", "8080", "Web server binds to this port. Default is 8080.")
 	verbosePtr := flag.Bool("V", false, "Prints version number of program.")
-	portString := ":" + *portPtr
 	flag.Parse()
+	portParam := ":" + *portPtr
 
 	if *verbosePtr {
 		fmt.Printf("Version number: %s \n", VERSION_NUMBER)
 		os.Exit(1)
 	}
 
-	//credit: http://stackoverflow.com/questions/9996767/showing-custom-404-error-page-with-standard-http-package
 	// The gorilla web toolkit (http://www.gorillatoolkit.org/) seems like it provides a cleaner way
-	// to handle and gives some additional functionality as number of paths increases.
+	// to handle notFound and provides some additional functionality.
 	r := mux.NewRouter()
 	r.HandleFunc("/time", timeHandler)
 	r.NotFoundHandler = http.HandlerFunc(notFound)
 	http.Handle("/", r)
-	http.ListenAndServe(portString, nil)
+	http.ListenAndServe(portParam, nil)
 }
