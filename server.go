@@ -78,7 +78,7 @@ func handleDefault(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Debug("Cookie uuid found in user table: " + name)
-	templates.ExecuteTemplate(w, "greetings", name)
+	renderTemplate(w, "greetings", name)
 }
 
 func handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +86,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "GET" {
 		log.Debug("Login GET method detected.")
-		templates.ExecuteTemplate(w, "login", nil)
+		renderTemplate(w, "login", nil)
 		log.Debug("Login template rendered.")
 	}
 
@@ -115,7 +115,13 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 	log.Debug("Logout handler called.")
 	// Invalidate data along and set MaxAge to avoid accidental persistence issues.
 	setCookie(w, "deleted", -1)
-	templates.ExecuteTemplate(w, "logged-out.html", nil)
+	renderTemplate(w, "logged-out", nil)
+}
+
+func handleNotFound(w http.ResponseWriter, r *http.Request) {
+	logInfo("Not found handler called.", r)
+	w.WriteHeader(http.StatusNotFound)
+	renderTemplate(w, "404", nil)
 }
 
 func handleTime(w http.ResponseWriter, r *http.Request) {
@@ -124,7 +130,7 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 	// No error checking for name since logic implemented
 	// in template.
 	params := map[string]interface{}{"time": time.Now().Format(timeLayout), "name": name}
-	templates.ExecuteTemplate(w, "time.html", params)
+	renderTemplate(w, "time", params)
 }
 
 func logInfo(msg string, r *http.Request) {
@@ -135,18 +141,20 @@ func logInfo(msg string, r *http.Request) {
 	}).Info(msg)
 }
 
-func notFound(w http.ResponseWriter, r *http.Request) {
-	logInfo("Not found handler called.", r)
-	w.WriteHeader(http.StatusNotFound)
-	templates.ExecuteTemplate(w, "404.html", nil)
+// credit: https://golang.org/doc/articles/wiki/#tmp_10
+func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
+	
+	log.Debug(templ + ".html")
+	err := templates.ExecuteTemplate(w, templ + ".html", d)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+    }
 }
 
 func setCookie(w http.ResponseWriter, uuid string, maxAge int) {
 	c := http.Cookie{Name: COOKIE_NAME, Value: uuid, Path: "/", MaxAge: maxAge}
 	http.SetCookie(w, &c)
 }
-
-
 
 func uuid() string {
 	// credit: http://golang.org/pkg/os/exec/#Cmd.Run
@@ -209,7 +217,7 @@ func main() {
 	go r.HandleFunc("/login", handleLogin)
 	go r.HandleFunc("/logout", handleLogout)
 	go r.HandleFunc("/time", handleTime)
-	r.NotFoundHandler = http.HandlerFunc(notFound)
+	r.NotFoundHandler = http.HandlerFunc(handleNotFound)
 	http.Handle("/", r)
 	log.Fatal(http.ListenAndServe(portParam, nil))
 }
