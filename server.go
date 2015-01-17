@@ -70,7 +70,6 @@ func init() {
 
 func handleDefault(w http.ResponseWriter, r *http.Request) {
 	logInfo("Default handler called.", r)
-
 	name, err := uuidCookieToName(r)
 	if name == "" || err != nil {
 		log.Debug("No cookie found or value empty. Redirecting to login.")
@@ -83,7 +82,6 @@ func handleDefault(w http.ResponseWriter, r *http.Request) {
 
 func handleLogin(w http.ResponseWriter, r *http.Request) {
 	log.Debug("Login handler called.")
-
 	if r.Method == "GET" {
 		log.Debug("Login GET method detected.")
 		renderTemplate(w, "login", nil)
@@ -143,8 +141,6 @@ func logInfo(msg string, r *http.Request) {
 
 // credit: https://golang.org/doc/articles/wiki/#tmp_10
 func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
-	
-	log.Debug(templ + ".html")
 	err := templates.ExecuteTemplate(w, templ + ".html", d)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -172,7 +168,6 @@ func uuid() string {
 
 func uuidCookieToName(r *http.Request) (uName string, err error) {
 	log.Debug("Reading cookie 'uuid' and finding name.")
-
 	cookie, err := r.Cookie(COOKIE_NAME)
 	// TODO: Implement additional cookie validation
 	// like domain and expiry in own method.
@@ -212,11 +207,11 @@ func main() {
 	// The gorilla web toolkit (http://www.gorillatoolkit.org/) seems like it provides a cleaner way
 	// to handle notFound and provides some additional functionality.
 	r := mux.NewRouter()
-	go r.HandleFunc("/", handleDefault)
-	go r.HandleFunc("/index.html", handleDefault)
-	go r.HandleFunc("/login", handleLogin)
-	go r.HandleFunc("/logout", handleLogout)
-	go r.HandleFunc("/time", handleTime)
+	r.HandleFunc("/", handleDefault)
+	r.HandleFunc("/index.html", handleDefault)
+	r.HandleFunc("/login", handleLogin)
+	r.HandleFunc("/logout", handleLogout)
+	r.HandleFunc("/time", handleTime)
 	r.NotFoundHandler = http.HandlerFunc(handleNotFound)
 	http.Handle("/", r)
 	log.Fatal(http.ListenAndServe(portParam, nil))
