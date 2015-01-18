@@ -15,19 +15,17 @@
 package main
 
 import (
-	"errors"
+	// "errors"
 	"flag"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
+	"github.com/patkaehuaea/people"
 	"github.com/gorilla/mux"
 	"html/template"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strings"
-	"sync"
 	"time"
 )
 
@@ -38,29 +36,7 @@ const COOKIE_MAX_AGE = 86400
 // Program expects html template directory to be in same path as executable is run.
 var cwd, _ = os.Getwd()
 var templates = template.Must(template.ParseGlob(filepath.Join(cwd, "templates", "*.html")))
-
-// credit: https://blog.golang.org/go-maps-in-action
-var users = struct {
-	sync.RWMutex
-	m map[string]string
-}{m: make(map[string]string)}
-
-// credit: https://blog.golang.org/go-maps-in-action
-// Should only be called after validation on name has occured.
-// Performs no internal validation before adding to data store.
-func addName(uuid string, name string) {
-	users.Lock()
-	users.m[uuid] = name
-	users.Unlock()
-}
-
-// credit: https://blog.golang.org/go-maps-in-action
-func findName(uuid string) string {
-	users.RLock()
-	name := users.m[uuid]
-	users.RUnlock()
-	return name
-}
+var users = people.NewUsers()
 
 func init() {
 	log.SetOutput(os.Stdout)
@@ -69,14 +45,14 @@ func init() {
 
 func handleDefault(w http.ResponseWriter, r *http.Request) {
 	logInfo("Default handler called.", r)
-	name, err := cookieUUIDToName(r)
-	if name == "" || err != nil {
+	id, _ := idFromUUIDCookie(r)
+	if name := users.Name(id) ; name != "" {
+		log.Debug("ID found in users table.")
+		renderTemplate(w, "greetings", name)
+	} else {
 		log.Debug("No cookie found or value empty. Redirecting to login.")
 		http.Redirect(w, r, "/login", http.StatusFound)
 	}
-
-	log.Debug("Cookie uuid found in user table: " + name)
-	renderTemplate(w, "greetings", name)
 }
 
 func handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -92,9 +68,10 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		// including space.
 		if valid, _ := regexp.MatchString("^[a-zA-Z]{2,35} {0,1}[a-zA-Z]{0,35}$", name) ; valid {
 			log.Debug("Name matched regex.")
-			uuid := uuid()
-			addName(uuid, name)
-			setCookie(w, uuid, COOKIE_MAX_AGE)
+			// uuid := uuid()
+			person := people.NewPerson(name)
+			users.Add(person)
+			setCookie(w, person.ID, COOKIE_MAX_AGE)
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		} else {
@@ -124,10 +101,8 @@ func handleNotFound(w http.ResponseWriter, r *http.Request) {
 
 func handleTime(w http.ResponseWriter, r *http.Request) {
 	logInfo("Time handler called.", r)
-	name, _ := cookieUUIDToName(r)
-	// No error checking for name since logic implemented
-	// in template.
-	params := map[string]interface{}{"time": time.Now().Format(timeLayout), "name": name}
+	id, _ := idFromUUIDCookie(r)
+	params := map[string]interface{}{"time": time.Now().Format(timeLayout), "name": users.Name(id)}
 	renderTemplate(w, "time", params)
 }
 
@@ -152,34 +127,14 @@ func setCookie(w http.ResponseWriter, uuid string, maxAge int) {
 	http.SetCookie(w, &c)
 }
 
-func uuid() string {
-	// Command returns newline at end and must be stripped before use
-	// otherwise SetCookie will fail.
-	out, err := exec.Command("/usr/bin/uuidgen").Output()
-	if err != nil {
-		log.Fatal(err)
-		return ""
-	}
-	uuid := strings.TrimSuffix(string(out), "\n")
-	return  uuid
-}
-
-func cookieUUIDToName(r *http.Request) (uName string, err error) {
-	log.Debug("Reading cookie 'uuid' and finding name.")
+func idFromUUIDCookie(r *http.Request) (string, error) {
+	log.Debug("Reading cookie 'uuid'.")
 	cookie, err := r.Cookie(COOKIE_NAME)
-	// TODO: Implement additional cookie validation
-	// like domain and expiry in own method.
 	if err == http.ErrNoCookie {
+		log.Debug("Cookie not found.")
 		return "", http.ErrNoCookie
 	}
-
-	name := findName(cookie.Value)
-
-	if name == "" {
-		return "", errors.New("Cookie value not found in user table.")
-	}
-
-	return name, nil
+	return cookie.Value, nil
 }
 
 func main() {
