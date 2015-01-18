@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -45,14 +46,12 @@ var users = struct {
 }{m: make(map[string]string)}
 
 // credit: https://blog.golang.org/go-maps-in-action
-func addName(uuid string, name string) bool {
-	if validateName(name) {
-		users.Lock()
-		users.m[uuid] = name
-		users.Unlock()
-		return true
-	}
-	return false
+// Should only be called after validation on name has occured.
+// Performs no internal validation before adding to data store.
+func addName(uuid string, name string) {
+	users.Lock()
+	users.m[uuid] = name
+	users.Unlock()
 }
 
 // credit: https://blog.golang.org/go-maps-in-action
@@ -70,7 +69,7 @@ func init() {
 
 func handleDefault(w http.ResponseWriter, r *http.Request) {
 	logInfo("Default handler called.", r)
-	name, err := uuidCookieToName(r)
+	name, err := cookieUUIDToName(r)
 	if name == "" || err != nil {
 		log.Debug("No cookie found or value empty. Redirecting to login.")
 		http.Redirect(w, r, "/login", http.StatusFound)
@@ -85,28 +84,29 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		log.Debug("Login GET method detected.")
 		renderTemplate(w, "login", nil)
-		log.Debug("Login template rendered.")
-	}
-
-	if r.Method == "POST" {
+	} else if r.Method == "POST" {
 		log.Debug("Login POST method detected.")
-		// Form will not submit if name empty.
 		name := r.FormValue("name")
-		if validateName(name) {
+		// Allows first name, or first and last name in English characters with intervening space. 
+		// Minimum length of name is two characters and maximum length of field is 71 characters 
+		// including space.
+		if valid, _ := regexp.MatchString("^[a-zA-Z]{2,35} {0,1}[a-zA-Z]{0,35}$", name) ; valid {
+			log.Debug("Name matched regex.")
 			uuid := uuid()
 			addName(uuid, name)
 			setCookie(w, uuid, COOKIE_MAX_AGE)
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		} else {
-			// Redirect user with 4xx status code.
+			// Fail and require new input rather than cleaning and 
+			// passing on.
 			log.Debug("Invalid username. Redirecting to root.")
-			w.WriteHeader(http.StatusBadRequest)
+			//w.WriteHeader(http.StatusBadRequest)
 			http.Redirect(w, r, "/", http.StatusFound)
 		}
+	} else {
+		log.Debug("Login request method not handled.")
 	}
-
-	log.Debug("Request method not handled.")
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
@@ -124,7 +124,7 @@ func handleNotFound(w http.ResponseWriter, r *http.Request) {
 
 func handleTime(w http.ResponseWriter, r *http.Request) {
 	logInfo("Time handler called.", r)
-	name, _ := uuidCookieToName(r)
+	name, _ := cookieUUIDToName(r)
 	// No error checking for name since logic implemented
 	// in template.
 	params := map[string]interface{}{"time": time.Now().Format(timeLayout), "name": name}
@@ -153,20 +153,18 @@ func setCookie(w http.ResponseWriter, uuid string, maxAge int) {
 }
 
 func uuid() string {
-	// credit: http://golang.org/pkg/os/exec/#Cmd.Run
-	log.Debug("Getting uuid.")
+	// Command returns newline at end and must be stripped before use
+	// otherwise SetCookie will fail.
 	out, err := exec.Command("/usr/bin/uuidgen").Output()
 	if err != nil {
 		log.Fatal(err)
+		return ""
 	}
-
 	uuid := strings.TrimSuffix(string(out), "\n")
-
-	log.Debug("Clean uuid generated:" + uuid)
-	return uuid
+	return  uuid
 }
 
-func uuidCookieToName(r *http.Request) (uName string, err error) {
+func cookieUUIDToName(r *http.Request) (uName string, err error) {
 	log.Debug("Reading cookie 'uuid' and finding name.")
 	cookie, err := r.Cookie(COOKIE_NAME)
 	// TODO: Implement additional cookie validation
@@ -182,12 +180,6 @@ func uuidCookieToName(r *http.Request) (uName string, err error) {
 	}
 
 	return name, nil
-}
-
-func validateName(name string) bool {
-	// TODO: better to implement in form?
-	// TODO: implement name validation
-	return true
 }
 
 func main() {
