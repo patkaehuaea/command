@@ -19,8 +19,8 @@ import (
 	"flag"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"github.com/patkaehuaea/people"
 	"github.com/gorilla/mux"
+	"github.com/patkaehuaea/people"
 	"html/template"
 	"net/http"
 	"os"
@@ -38,10 +38,18 @@ var cwd, _ = os.Getwd()
 var templates = template.Must(template.ParseGlob(filepath.Join(cwd, "templates", "*.html")))
 var users = people.NewUsers()
 
+func debug(msg string, r *http.Request) {
+	log.WithFields(log.Fields{
+		"method": r.Method,
+		"time":   time.Now().Format(timeLayout),
+		"url":    r.URL,
+	}).Debug(msg)
+}
+
 func handleDefault(w http.ResponseWriter, r *http.Request) {
 	debug("Default handler called.", r)
 	id, _ := idFromUUIDCookie(r)
-	if name := users.Name(id) ; name != "" {
+	if name := users.Name(id); name != "" {
 		info("ID found in users table.", r)
 		renderTemplate(w, "greetings", name)
 	} else {
@@ -58,10 +66,10 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	} else if r.Method == "POST" {
 		debug("Login POST method detected.", r)
 		name := r.FormValue("name")
-		// Allows first name, or first and last name in English characters with intervening space. 
-		// Minimum length of name is two characters and maximum length of field is 71 characters 
+		// Allows first name, or first and last name in English characters with intervening space.
+		// Minimum length of name is two characters and maximum length of field is 71 characters
 		// including space. Case where field is completely empty handled by javascript in template.
-		if valid, _ := regexp.MatchString("^[a-zA-Z]{2,35} {0,1}[a-zA-Z]{0,35}$", name) ; valid {
+		if valid, _ := regexp.MatchString("^[a-zA-Z]{2,35} {0,1}[a-zA-Z]{0,35}$", name); valid {
 			debug("Name matched regex.", r)
 			// uuid := uuid()
 			person := people.NewPerson(name)
@@ -70,7 +78,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		} else {
-			// Fail and require new input rather than cleaning and 
+			// Fail and require new input rather than cleaning and
 			// passing on.
 			debug("Invalid username. Redirecting to root.", r)
 			//w.WriteHeader(http.StatusBadRequest)
@@ -101,38 +109,6 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "time", params)
 }
 
-// Possible to define customer formatter to avoid having
-// to call WithFields on each log call. In the meantime
-// implementing helpers function as is.
-func info(msg string, r *http.Request) {
-	log.WithFields(log.Fields{
-		"method": r.Method,
-		"time":   time.Now().Format(timeLayout),
-		"url":    r.URL,
-	}).Info(msg)
-}
-
-func debug(msg string, r *http.Request) {
-	log.WithFields(log.Fields{
-		"method": r.Method,
-		"time":   time.Now().Format(timeLayout),
-		"url":    r.URL,
-	}).Debug(msg)
-}
-
-// credit: https://golang.org/doc/articles/wiki/#tmp_10
-func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
-	err := templates.ExecuteTemplate(w, templ + ".html", d)
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-    }
-}
-
-func setCookie(w http.ResponseWriter, uuid string, maxAge int) {
-	c := http.Cookie{Name: COOKIE_NAME, Value: uuid, Path: "/", MaxAge: maxAge}
-	http.SetCookie(w, &c)
-}
-
 func idFromUUIDCookie(r *http.Request) (string, error) {
 	log.Debug("Reading cookie 'uuid'.")
 	cookie, err := r.Cookie(COOKIE_NAME)
@@ -141,6 +117,27 @@ func idFromUUIDCookie(r *http.Request) (string, error) {
 		return "", http.ErrNoCookie
 	}
 	return cookie.Value, nil
+}
+
+func info(msg string, r *http.Request) {
+	log.WithFields(log.Fields{
+		"method": r.Method,
+		"time":   time.Now().Format(timeLayout),
+		"url":    r.URL,
+	}).Info(msg)
+}
+
+// credit: https://golang.org/doc/articles/wiki/#tmp_10
+func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
+	err := templates.ExecuteTemplate(w, templ+".html", d)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func setCookie(w http.ResponseWriter, uuid string, maxAge int) {
+	c := http.Cookie{Name: COOKIE_NAME, Value: uuid, Path: "/", MaxAge: maxAge}
+	http.SetCookie(w, &c)
 }
 
 func main() {
