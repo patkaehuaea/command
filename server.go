@@ -38,36 +38,31 @@ var cwd, _ = os.Getwd()
 var templates = template.Must(template.ParseGlob(filepath.Join(cwd, "templates", "*.html")))
 var users = people.NewUsers()
 
-func init() {
-	log.SetOutput(os.Stdout)
-	log.SetLevel(log.DebugLevel)
-}
-
 func handleDefault(w http.ResponseWriter, r *http.Request) {
-	logInfo("Default handler called.", r)
+	debug("Default handler called.", r)
 	id, _ := idFromUUIDCookie(r)
 	if name := users.Name(id) ; name != "" {
-		log.Debug("ID found in users table.")
+		info("ID found in users table.", r)
 		renderTemplate(w, "greetings", name)
 	} else {
-		log.Debug("No cookie found or value empty. Redirecting to login.")
+		debug("No cookie found or value empty. Redirecting to login.", r)
 		http.Redirect(w, r, "/login", http.StatusFound)
 	}
 }
 
 func handleLogin(w http.ResponseWriter, r *http.Request) {
-	log.Debug("Login handler called.")
+	debug("Login handler called.", r)
 	if r.Method == "GET" {
-		log.Debug("Login GET method detected.")
+		debug("Login GET method detected.", r)
 		renderTemplate(w, "login", nil)
 	} else if r.Method == "POST" {
-		log.Debug("Login POST method detected.")
+		debug("Login POST method detected.", r)
 		name := r.FormValue("name")
 		// Allows first name, or first and last name in English characters with intervening space. 
 		// Minimum length of name is two characters and maximum length of field is 71 characters 
-		// including space.
+		// including space. Case where field is completely empty handled by javascript in template.
 		if valid, _ := regexp.MatchString("^[a-zA-Z]{2,35} {0,1}[a-zA-Z]{0,35}$", name) ; valid {
-			log.Debug("Name matched regex.")
+			debug("Name matched regex.", r)
 			// uuid := uuid()
 			person := people.NewPerson(name)
 			users.Add(person)
@@ -77,41 +72,52 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		} else {
 			// Fail and require new input rather than cleaning and 
 			// passing on.
-			log.Debug("Invalid username. Redirecting to root.")
+			debug("Invalid username. Redirecting to root.", r)
 			//w.WriteHeader(http.StatusBadRequest)
 			http.Redirect(w, r, "/", http.StatusFound)
 		}
 	} else {
-		log.Debug("Login request method not handled.")
+		debug("Login request method not handled.", r)
 	}
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
-	log.Debug("Logout handler called.")
+	debug("Logout handler called.", r)
 	// Invalidate data along and set MaxAge to avoid accidental persistence issues.
 	setCookie(w, "deleted", -1)
 	renderTemplate(w, "logged-out", nil)
 }
 
 func handleNotFound(w http.ResponseWriter, r *http.Request) {
-	logInfo("Not found handler called.", r)
+	debug("Not found handler called.", r)
 	w.WriteHeader(http.StatusNotFound)
 	renderTemplate(w, "404", nil)
 }
 
 func handleTime(w http.ResponseWriter, r *http.Request) {
-	logInfo("Time handler called.", r)
+	debug("Time handler called.", r)
 	id, _ := idFromUUIDCookie(r)
 	params := map[string]interface{}{"time": time.Now().Format(timeLayout), "name": users.Name(id)}
 	renderTemplate(w, "time", params)
 }
 
-func logInfo(msg string, r *http.Request) {
+// Possible to define customer formatter to avoid having
+// to call WithFields on each log call. In the meantime
+// implementing helpers function as is.
+func info(msg string, r *http.Request) {
 	log.WithFields(log.Fields{
 		"method": r.Method,
 		"time":   time.Now().Format(timeLayout),
 		"url":    r.URL,
 	}).Info(msg)
+}
+
+func debug(msg string, r *http.Request) {
+	log.WithFields(log.Fields{
+		"method": r.Method,
+		"time":   time.Now().Format(timeLayout),
+		"url":    r.URL,
+	}).Debug(msg)
 }
 
 // credit: https://golang.org/doc/articles/wiki/#tmp_10
@@ -150,6 +156,8 @@ func main() {
 		fmt.Printf("Version number: %s \n", VERSION_NUMBER)
 		os.Exit(1)
 	}
+
+	log.SetLevel(log.DebugLevel)
 
 	// The gorilla web toolkit (http://www.gorillatoolkit.org/) seems like it provides a cleaner way
 	// to handle notFound and provides some additional functionality.
