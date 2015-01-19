@@ -29,7 +29,7 @@ import (
 	"time"
 )
 
-const VERSION_NUMBER = "v1.0.6"
+const VERSION_NUMBER = "v1.0.7"
 const timeLayout = "3:04:05 PM"
 const COOKIE_NAME = "uuid"
 const COOKIE_MAX_AGE = 86400
