@@ -137,6 +137,7 @@ func info(msg string, r *http.Request) {
 func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 	err := templates.ExecuteTemplate(w, templ+".html", d)
 	if err != nil {
+		log.Fatal("Error looking for template: " + templ)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
