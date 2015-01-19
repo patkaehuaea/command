@@ -29,7 +29,7 @@ import (
 
 const (
 	VERSION_NUMBER = "v1.0.7"
-	timeLayout = "3:04:05 PM"
+	TIME_LAYOUT = "3:04:05 PM"
 	COOKIE_NAME = "uuid"
 	COOKIE_MAX_AGE = 86400
 )
@@ -44,7 +44,7 @@ var users = people.NewUsers()
 func debug(msg string, r *http.Request) {
 	log.WithFields(log.Fields{
 		"method": r.Method,
-		"time":   time.Now().Format(timeLayout),
+		"time":   time.Now().Format(TIME_LAYOUT),
 		"url":    r.URL,
 	}).Debug(msg)
 }
@@ -111,7 +111,7 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 	id, _ := idFromUUIDCookie(r)
 	// Personalized message will only display if user's cookie contains an id
 	// and that id is found in the users table. Template handles display logic.
-	params := map[string]interface{}{"time": time.Now().Format(timeLayout), "name": users.Name(id)}
+	params := map[string]interface{}{"time": time.Now().Format(TIME_LAYOUT), "name": users.Name(id)}
 	renderTemplate(w, "time", params)
 }
 
@@ -128,7 +128,7 @@ func idFromUUIDCookie(r *http.Request) (string, error) {
 func info(msg string, r *http.Request) {
 	log.WithFields(log.Fields{
 		"method": r.Method,
-		"time":   time.Now().Format(timeLayout),
+		"time":   time.Now().Format(TIME_LAYOUT),
 		"url":    r.URL,
 	}).Info(msg)
 }
