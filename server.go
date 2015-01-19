@@ -5,17 +5,15 @@
 
 // Package contains simple web server that binds to port 8080. Exectuable accepts
 // two parameters, --port to designate listen port, and -V to output the version
-// number of the program. Server responsds to only one request at /time and responds
-// with the current time. All other requests should generate an http 404 status and
-// custom not found page.
-
-// TODO: Extend Cookie Struct
-// TODO: Determine if logout needs to have user removed from map.
+// number of the program. Server provieds '/time' endpoint as well as '/login' '/logout'
+// and root pages '/', 'index.html'. Pages are rendered from templates that must be
+// located in a 'templates/' directory relative to the executable. This package uses
+// adjacent people package to maintain state as it relates to visits. State is lost
+// upon program termination.
 
 package main
 
 import (
-	// "errors"
 	"flag"
 	"fmt"
 	log "github.com/Sirupsen/logrus"
@@ -29,16 +27,20 @@ import (
 	"time"
 )
 
-const VERSION_NUMBER = "v1.0.7"
-const timeLayout = "3:04:05 PM"
-const COOKIE_NAME = "uuid"
-const COOKIE_MAX_AGE = 86400
+const (
+	VERSION_NUMBER = "v1.0.7"
+	timeLayout = "3:04:05 PM"
+	COOKIE_NAME = "uuid"
+	COOKIE_MAX_AGE = 86400
+)
 
-// Program expects html template directory to be in same path as executable is run.
 var cwd, _ = os.Getwd()
 var templates = template.Must(template.ParseGlob(filepath.Join(cwd, "templates", "*.html")))
 var users = people.NewUsers()
 
+// Debug(..) and Log(..) functions simply wrap log calls
+// with fields. Possible to define custom formatter on logrus
+// library at later time.
 func debug(msg string, r *http.Request) {
 	log.WithFields(log.Fields{
 		"method": r.Method,
@@ -59,6 +61,8 @@ func handleDefault(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Handling GET and POST methods can be implemented on separate /login
+// handlers with mux. Left as-is for clarity of flow.
 func handleLogin(w http.ResponseWriter, r *http.Request) {
 	debug("Login handler called.", r)
 	if r.Method == "GET" {
@@ -105,6 +109,8 @@ func handleNotFound(w http.ResponseWriter, r *http.Request) {
 func handleTime(w http.ResponseWriter, r *http.Request) {
 	debug("Time handler called.", r)
 	id, _ := idFromUUIDCookie(r)
+	// Personalized message will only display if user's cookie contains an id
+	// and that id is found in the users table. Template handles display logic.
 	params := map[string]interface{}{"time": time.Now().Format(timeLayout), "name": users.Name(id)}
 	renderTemplate(w, "time", params)
 }
@@ -135,6 +141,8 @@ func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 	}
 }
 
+// The maxAge parameter allows use of a single method to set and delete cookie.
+// Default cookie valid for 1 day. Set age to -1 for deletion.
 func setCookie(w http.ResponseWriter, uuid string, maxAge int) {
 	c := http.Cookie{Name: COOKIE_NAME, Value: uuid, Path: "/", MaxAge: maxAge}
 	http.SetCookie(w, &c)
@@ -151,6 +159,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Wouldn't typically set debug for production application, but
+	// is valid given purpose, scope, and expected usage.
 	log.SetLevel(log.DebugLevel)
 
 	r := mux.NewRouter()
