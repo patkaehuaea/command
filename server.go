@@ -29,6 +29,7 @@ import (
 	"time"
 )
 
+const VERSION_NUMBER = "v1.0.6"
 const timeLayout = "3:04:05 PM"
 const COOKIE_NAME = "uuid"
 const COOKIE_MAX_AGE = 86400
@@ -50,7 +51,7 @@ func handleDefault(w http.ResponseWriter, r *http.Request) {
 	debug("Default handler called.", r)
 	id, _ := idFromUUIDCookie(r)
 	if name := users.Name(id); name != "" {
-		info("ID found in users table.", r)
+		info("User: " + name + " viewing site.", r)
 		renderTemplate(w, "greetings", name)
 	} else {
 		debug("No cookie found or value empty. Redirecting to login.", r)
@@ -68,7 +69,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		name := r.FormValue("name")
 		// Allows first name, or first and last name in English characters with intervening space.
 		// Minimum length of name is two characters and maximum length of field is 71 characters
-		// including space. Case where field is completely empty handled by javascript in template.
+		// including space.
 		if valid, _ := regexp.MatchString("^[a-zA-Z]{2,35} {0,1}[a-zA-Z]{0,35}$", name); valid {
 			debug("Name matched regex.", r)
 			// uuid := uuid()
@@ -76,13 +77,12 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 			users.Add(person)
 			setCookie(w, person.ID, COOKIE_MAX_AGE)
 			http.Redirect(w, r, "/", http.StatusFound)
+			info("User: " + person.Name + " logged in.", r)
 			return
 		} else {
-			// Fail and require new input rather than cleaning and
-			// passing on.
-			debug("Invalid username. Redirecting to root.", r)
-			//w.WriteHeader(http.StatusBadRequest)
-			http.Redirect(w, r, "/", http.StatusFound)
+			debug("Invalid username. Rendering login page.", r)
+			w.WriteHeader(http.StatusBadRequest)
+			renderTemplate(w, "login", "C'mon, I need a name.")
 		}
 	} else {
 		debug("Login request method not handled.", r)
@@ -141,9 +141,6 @@ func setCookie(w http.ResponseWriter, uuid string, maxAge int) {
 }
 
 func main() {
-
-	const VERSION_NUMBER = "v1.0.6"
-
 	portPtr := flag.String("port", "8080", "Web server binds to this port. Default is 8080.")
 	verbosePtr := flag.Bool("V", false, "Prints version number of program.")
 	flag.Parse()
@@ -156,8 +153,6 @@ func main() {
 
 	log.SetLevel(log.DebugLevel)
 
-	// The gorilla web toolkit (http://www.gorillatoolkit.org/) seems like it provides a cleaner way
-	// to handle notFound and provides some additional functionality.
 	r := mux.NewRouter()
 	r.HandleFunc("/", handleDefault)
 	r.HandleFunc("/index.html", handleDefault)

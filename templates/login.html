@@ -1,15 +1,5 @@
-<!-- source: http://www.w3schools.com/js/js_form_validation.asp -->
 <html>
 <head>
-<script>
-function validateForm() {
-    var x = document.forms["earthling_login"]["name"].value;
-    if (x==null || x=="") {
-        alert("C'mon, I need a name.");
-        return false;
-    }
-}
-</script>
 </head>
 <body>
 <form name="earthling_login" action="login" onsubmit="return validateForm()" method="post">
@@ -18,5 +8,6 @@ function validateForm() {
   <input type="submit">
 </form>
 </p>
+<p>{{.}}</p>
 </body>
 </html>
