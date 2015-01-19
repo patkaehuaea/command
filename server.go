@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	VERSION_NUMBER = "v1.0.7"
+	VERSION_NUMBER = "v1.0.8"
 	TIME_LAYOUT    = "3:04:05 PM"
 	COOKIE_NAME    = "uuid"
 	COOKIE_MAX_AGE = 86400
