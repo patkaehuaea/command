@@ -29,8 +29,8 @@ import (
 
 const (
 	VERSION_NUMBER = "v1.0.7"
-	TIME_LAYOUT = "3:04:05 PM"
-	COOKIE_NAME = "uuid"
+	TIME_LAYOUT    = "3:04:05 PM"
+	COOKIE_NAME    = "uuid"
 	COOKIE_MAX_AGE = 86400
 )
 
@@ -53,7 +53,7 @@ func handleDefault(w http.ResponseWriter, r *http.Request) {
 	debug("Default handler called.", r)
 	id, _ := idFromUUIDCookie(r)
 	if name := users.Name(id); name != "" {
-		info("User: " + name + " viewing site.", r)
+		info("User: "+name+" viewing site.", r)
 		renderTemplate(w, "greetings", name)
 	} else {
 		debug("No cookie found or value empty. Redirecting to login.", r)
@@ -81,7 +81,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 			users.Add(person)
 			setCookie(w, person.ID, COOKIE_MAX_AGE)
 			http.Redirect(w, r, "/", http.StatusFound)
-			info("User: " + person.Name + " logged in.", r)
+			info("User: "+person.Name+" logged in.", r)
 			return
 		} else {
 			debug("Invalid username. Rendering login page.", r)
