@@ -1,8 +1,8 @@
-//  Copyright (C) Pat Kaehuaea - All Rights Reserved
-//  Unauthorized copying of this file, via any medium is strictly prohibited
-//  Proprietary and confidential
-//  Written by Pat Kaehuaea, January 2015
-
+// Copyright (C) Pat Kaehuaea - All Rights Reserved
+// Unauthorized copying of this file, via any medium is strictly prohibited
+// Proprietary and confidential
+// Written by Pat Kaehuaea, January 2015
+//
 // Package contains simple web server that binds to port 8080. Exectuable accepts
 // two parameters, --port to designate listen port, and -V to output the version
 // number of the program. Server provieds '/time' endpoint as well as '/login' '/logout'
@@ -10,7 +10,6 @@
 // located in a 'templates/' directory relative to the executable. This package uses
 // adjacent people package to maintain state as it relates to visits. State is lost
 // upon program termination.
-
 package main
 
 import (

@@ -2,13 +2,12 @@
 //  Unauthorized copying of this file, via any medium is strictly prohibited
 //  Proprietary and confidential
 //  Written by Pat Kaehuaea, January 2015
-
+//
 // Package contains two types, Person and Users. Intended to be used as
 // state tracking mechanism for simple server. Initialization of a
 // Users type creates a map of id -> *Person. Access to the map is
 // gated via RWMutex. Constructors exist for both Person and
 // Users structs to allow for easy initialization.
-
 package people
 
 import (
