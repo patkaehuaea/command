@@ -18,7 +18,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
-	"github.com/patkaehuaea/people"
+	"github.com/patkaehuaea/server/people"
 	"html/template"
 	"net/http"
 	"os"
