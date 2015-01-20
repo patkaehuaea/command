@@ -42,11 +42,11 @@ var users = people.NewUsers()
 // library at later time.
 func debug(msg string, r *http.Request) {
 	log.WithFields(log.Fields{
-		"header": r.Header["Cookie"],
+		"header":      r.Header["Cookie"],
 		"remote addr": r.RemoteAddr,
-		"method": r.Method,
-		"time":   time.Now().Format(TIME_LAYOUT),
-		"url":    r.URL,
+		"method":      r.Method,
+		"time":        time.Now().Format(TIME_LAYOUT),
+		"url":         r.URL,
 	}).Debug(msg)
 }
 
@@ -54,7 +54,7 @@ func handleDefault(w http.ResponseWriter, r *http.Request) {
 	info("Default handler called.", r)
 	id, _ := idFromUUIDCookie(r)
 	if name := users.Name(id); name != "" {
-		log.Debug("User: "+name+" viewing site.")
+		log.Debug("User: " + name + " viewing site.")
 		renderTemplate(w, "greetings", name)
 	} else {
 		log.Debug("No cookie found or value empty. Redirecting to login.")
@@ -82,7 +82,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 			users.Add(person)
 			setCookie(w, person.ID, COOKIE_MAX_AGE)
 			http.Redirect(w, r, "/", http.StatusFound)
-			log.Debug("User: "+person.Name+" logged in.")
+			log.Debug("User: " + person.Name + " logged in.")
 			return
 		} else {
 			log.Debug("Invalid username. Rendering login page.")
@@ -128,11 +128,11 @@ func idFromUUIDCookie(r *http.Request) (string, error) {
 
 func info(msg string, r *http.Request) {
 	log.WithFields(log.Fields{
-		"header": r.Header["Cookie"],
+		"header":      r.Header["Cookie"],
 		"remote addr": r.RemoteAddr,
-		"method": r.Method,
-		"time":   time.Now().Format(TIME_LAYOUT),
-		"url":    r.URL,
+		"method":      r.Method,
+		"time":        time.Now().Format(TIME_LAYOUT),
+		"url":         r.URL,
 	}).Info(msg)
 }
 
