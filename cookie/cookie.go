@@ -14,10 +14,10 @@ import (
 )
 
 const (
-	COOKIE_NAME    = "uuid"
+	COOKIE_NAME = "uuid"
 	COOKIE_PATH = "/"
-	MAX_AGE = 86400
-	DELETE_AGE = -1
+	MAX_AGE     = 86400
+	DELETE_AGE  = -1
 )
 
 // Returns address of new cookie with 'uuid' name, value set to value
@@ -32,10 +32,10 @@ func NewCookie(value string, age int) *http.Cookie {
 // Returns "" and error if no cookie found named uuid. Performs
 // no check on validity of uuid before returning.
 func UUIDValue(r *http.Request) (string, error) {
-	log.Debug("Attempting to read "+COOKIE_NAME+" cookie from request.")
+	log.Debug("Attempting to read " + COOKIE_NAME + " cookie from request.")
 	cookie, err := r.Cookie(COOKIE_NAME)
 	if err == http.ErrNoCookie {
-		log.Debug(COOKIE_NAME+" cookie not found in request.")
+		log.Debug(COOKIE_NAME + " cookie not found in request.")
 		return "", http.ErrNoCookie
 	}
 	return cookie.Value, nil
