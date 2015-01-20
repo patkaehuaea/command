@@ -55,15 +55,15 @@ func NewUsers() *Users {
 	return &Users{m: make(map[string]*Person)}
 }
 
-// Locks Users map before adding *Person.
-func (u Users) Add(p *Person) {
+// Adds a *Person to users map. Acquires RW lock before accessing resource.
+func (u *Users) Add(p *Person) {
 	u.Lock()
 	u.m[p.ID] = p
 	u.Unlock()
 }
 
-// Locks Users map before deleting *Person.
-func (u Users) Delete(p *Person) {
+// Deletes *Person from users map whose ID is p.ID. Acquires RW lock before accessing resource.
+func (u *Users) Delete(p *Person) {
 	u.Lock()
 	delete(u.m, p.ID)
 	u.Unlock()
@@ -72,7 +72,7 @@ func (u Users) Delete(p *Person) {
 // Performs read lock on Users. Returns true
 // if user with id exists in map. Returns false
 // otherise.
-func (u Users) Exists(id string) bool {
+func (u *Users) Exists(id string) bool {
 	u.RLock()
 	_, ok := u.m[id]
 	u.RUnlock()
@@ -82,7 +82,7 @@ func (u Users) Exists(id string) bool {
 // Performs read lock on Users and returns
 // name of user with id. If not found, returns
 // empty string.
-func (u Users) Name(id string) string {
+func (u *Users) Name(id string) string {
 	u.RLock()
 	p := u.m[id]
 	u.RUnlock()
