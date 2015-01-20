@@ -6,6 +6,6 @@ span.time {color: red}
 </style>
 </head>
 <body>
-<p>The time is now <span class="time">{{.localTime}} ({{.UTCTime}})</span>.</p>
+<p>The time is now <span class="time">{{.localTime}} ({{.UTCTime}})</span>{{if .name}}, {{.name}}.{{else}}.{{end}}</p>
 </body>
 </html>

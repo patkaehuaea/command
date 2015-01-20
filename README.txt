@@ -3,16 +3,38 @@ Instructions for running server:
 $ cd $GOPATH/src/github.com/patkaehuaea/server
 $ go build
 $ go install
-$ GOPATH/bin/server
+$ $GOPATH/bin/server
+
+Alternatively:
+
+$ cd $GOPATH/src/github.com/patkaehuaea/server
+$ make install
+$ $GOPATH/bin/server
 
 To view the version number:
 
 $ $GOPATH/bin/server -V
-Version number: v1.0.0
+Version number: v1.0.7
 
 To change default listen port:
 
 $ server -port="9001"
+
+To view main page:
+
+http://localhost:8080/
+http://localhost:8080/index.html
+
+
+To login:
+
+http://localhost:8080/login
+
+
+To logout:
+
+http://localhost:8080/logout
+
 
 To view the current time:
 
@@ -27,6 +49,7 @@ span.time {color: red}
 <body>
 <p>The time is now <span class="time">5:59:36 PM</span>.</p>
 </body>
+
 
 To view example 404 page:
 
