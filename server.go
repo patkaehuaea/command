@@ -28,9 +28,9 @@ import (
 )
 
 const (
-	VERSION_NUMBER = "v1.0.9"
-	LOCAL_TIME_LAYOUT    = "3:04:05 PM"
-	UTC_TIME_LAYOUT = "15:04:05 UTC"
+	VERSION_NUMBER    = "v1.1.0"
+	LOCAL_TIME_LAYOUT = "3:04:05 PM"
+	UTC_TIME_LAYOUT   = "15:04:05 UTC"
 )
 
 var cwd, _ = os.Getwd()
@@ -45,7 +45,7 @@ func debug(msg string, r *http.Request) {
 		"header":      r.Header["Cookie"],
 		"remote addr": r.RemoteAddr,
 		"method":      r.Method,
-		"time":        time.Now().Format(TIME_LAYOUT),
+		"time":        time.Now().Format(LOCAL_TIME_LAYOUT),
 		"url":         r.URL,
 	}).Debug(msg)
 }
@@ -111,7 +111,9 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 	id, _ := cookie.UUIDValue(r)
 	// Personalized message will only display if user's cookie contains an id
 	// and that id is found in the users table. Template handles display logic.
-	params := map[string]interface{}{"localTime": time.Now().Format(localFormat), "UTCTime": time.Now().Format(UTCFormat), "name": users.Name(id)}
+	params := map[string]interface{}{"localTime": time.Now().Format(LOCAL_TIME_LAYOUT),
+		"UTCTime": time.Now().Format(UTC_TIME_LAYOUT),
+		"name":    users.Name(id)}
 	renderTemplate(w, "time", params)
 }
 
@@ -120,7 +122,7 @@ func info(msg string, r *http.Request) {
 		"header":      r.Header["Cookie"],
 		"remote addr": r.RemoteAddr,
 		"method":      r.Method,
-		"time":        time.Now().Format(TIME_LAYOUT),
+		"time":        time.Now().Format(LOCAL_TIME_LAYOUT),
 		"url":         r.URL,
 	}).Info(msg)
 }
