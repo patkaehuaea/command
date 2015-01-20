@@ -42,6 +42,8 @@ var users = people.NewUsers()
 // library at later time.
 func debug(msg string, r *http.Request) {
 	log.WithFields(log.Fields{
+		"header": r.Header["Cookie"],
+		"remote addr": r.RemoteAddr,
 		"method": r.Method,
 		"time":   time.Now().Format(TIME_LAYOUT),
 		"url":    r.URL,
@@ -49,13 +51,13 @@ func debug(msg string, r *http.Request) {
 }
 
 func handleDefault(w http.ResponseWriter, r *http.Request) {
-	debug("Default handler called.", r)
+	info("Default handler called.", r)
 	id, _ := idFromUUIDCookie(r)
 	if name := users.Name(id); name != "" {
-		info("User: "+name+" viewing site.", r)
+		log.Debug("User: "+name+" viewing site.")
 		renderTemplate(w, "greetings", name)
 	} else {
-		debug("No cookie found or value empty. Redirecting to login.", r)
+		log.Debug("No cookie found or value empty. Redirecting to login.")
 		http.Redirect(w, r, "/login", http.StatusFound)
 	}
 }
@@ -63,50 +65,50 @@ func handleDefault(w http.ResponseWriter, r *http.Request) {
 // Handling GET and POST methods can be implemented on separate /login
 // handlers with mux. Left as-is for clarity of flow.
 func handleLogin(w http.ResponseWriter, r *http.Request) {
-	debug("Login handler called.", r)
+	info("Login handler called.", r)
 	if r.Method == "GET" {
-		debug("Login GET method detected.", r)
+		log.Debug("Login GET method detected.")
 		renderTemplate(w, "login", nil)
 	} else if r.Method == "POST" {
-		debug("Login POST method detected.", r)
+		log.Debug("Login POST method detected.")
 		name := r.FormValue("name")
 		// Allows first name, or first and last name in English characters with intervening space.
 		// Minimum length of name is two characters and maximum length of field is 71 characters
 		// including space.
 		if valid, _ := regexp.MatchString("^[a-zA-Z]{2,35} {0,1}[a-zA-Z]{0,35}$", name); valid {
-			debug("Name matched regex.", r)
+			log.Debug("Name matched regex.")
 			// uuid := uuid()
 			person := people.NewPerson(name)
 			users.Add(person)
 			setCookie(w, person.ID, COOKIE_MAX_AGE)
 			http.Redirect(w, r, "/", http.StatusFound)
-			info("User: "+person.Name+" logged in.", r)
+			log.Debug("User: "+person.Name+" logged in.")
 			return
 		} else {
-			debug("Invalid username. Rendering login page.", r)
+			log.Debug("Invalid username. Rendering login page.")
 			w.WriteHeader(http.StatusBadRequest)
 			renderTemplate(w, "login", "C'mon, I need a name.")
 		}
 	} else {
-		debug("Login request method not handled.", r)
+		log.Debug("Login request method not handled.")
 	}
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
-	debug("Logout handler called.", r)
+	info("Logout handler called.", r)
 	// Invalidate data along and set MaxAge to avoid accidental persistence issues.
 	setCookie(w, "deleted", -1)
 	renderTemplate(w, "logged-out", nil)
 }
 
 func handleNotFound(w http.ResponseWriter, r *http.Request) {
-	debug("Not found handler called.", r)
+	info("Not found handler called.", r)
 	w.WriteHeader(http.StatusNotFound)
 	renderTemplate(w, "404", nil)
 }
 
 func handleTime(w http.ResponseWriter, r *http.Request) {
-	debug("Time handler called.", r)
+	info("Time handler called.", r)
 	id, _ := idFromUUIDCookie(r)
 	// Personalized message will only display if user's cookie contains an id
 	// and that id is found in the users table. Template handles display logic.
@@ -126,6 +128,8 @@ func idFromUUIDCookie(r *http.Request) (string, error) {
 
 func info(msg string, r *http.Request) {
 	log.WithFields(log.Fields{
+		"header": r.Header["Cookie"],
+		"remote addr": r.RemoteAddr,
 		"method": r.Method,
 		"time":   time.Now().Format(TIME_LAYOUT),
 		"url":    r.URL,
@@ -159,9 +163,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Wouldn't typically set debug for production application, but
-	// is valid given purpose, scope, and expected usage.
-	log.SetLevel(log.DebugLevel)
+	log.SetLevel(log.InfoLevel)
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", handleDefault)
