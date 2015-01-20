@@ -17,6 +17,7 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
+	"github.com/patkaehuaea/server/cookie"
 	"github.com/patkaehuaea/server/people"
 	"html/template"
 	"net/http"
@@ -27,10 +28,8 @@ import (
 )
 
 const (
-	VERSION_NUMBER = "v1.0.8"
+	VERSION_NUMBER = "v1.0.9"
 	TIME_LAYOUT    = "3:04:05 PM"
-	COOKIE_NAME    = "uuid"
-	COOKIE_MAX_AGE = 86400
 )
 
 var cwd, _ = os.Getwd()
@@ -52,7 +51,7 @@ func debug(msg string, r *http.Request) {
 
 func handleDefault(w http.ResponseWriter, r *http.Request) {
 	info("Default handler called.", r)
-	id, _ := idFromUUIDCookie(r)
+	id, _ := cookie.UUIDValue(r)
 	if name := users.Name(id); name != "" {
 		log.Debug("User: " + name + " viewing site.")
 		renderTemplate(w, "greetings", name)
@@ -77,10 +76,9 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		// including space.
 		if valid, _ := regexp.MatchString("^[a-zA-Z]{2,35} {0,1}[a-zA-Z]{0,35}$", name); valid {
 			log.Debug("Name matched regex.")
-			// uuid := uuid()
 			person := people.NewPerson(name)
 			users.Add(person)
-			setCookie(w, person.ID, COOKIE_MAX_AGE)
+			http.SetCookie(w, cookie.NewCookie(person.ID, cookie.MAX_AGE))
 			http.Redirect(w, r, "/", http.StatusFound)
 			log.Debug("User: " + person.Name + " logged in.")
 			return
@@ -97,7 +95,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 func handleLogout(w http.ResponseWriter, r *http.Request) {
 	info("Logout handler called.", r)
 	// Invalidate data along and set MaxAge to avoid accidental persistence issues.
-	setCookie(w, "deleted", -1)
+	http.SetCookie(w, cookie.NewCookie("deleted", cookie.DELETE_AGE))
 	renderTemplate(w, "logged-out", nil)
 }
 
@@ -109,21 +107,11 @@ func handleNotFound(w http.ResponseWriter, r *http.Request) {
 
 func handleTime(w http.ResponseWriter, r *http.Request) {
 	info("Time handler called.", r)
-	id, _ := idFromUUIDCookie(r)
+	id, _ := cookie.UUIDValue(r)
 	// Personalized message will only display if user's cookie contains an id
 	// and that id is found in the users table. Template handles display logic.
 	params := map[string]interface{}{"time": time.Now().Format(TIME_LAYOUT), "name": users.Name(id)}
 	renderTemplate(w, "time", params)
-}
-
-func idFromUUIDCookie(r *http.Request) (string, error) {
-	log.Debug("Reading cookie 'uuid'.")
-	cookie, err := r.Cookie(COOKIE_NAME)
-	if err == http.ErrNoCookie {
-		log.Debug("Cookie not found.")
-		return "", http.ErrNoCookie
-	}
-	return cookie.Value, nil
 }
 
 func info(msg string, r *http.Request) {
@@ -143,13 +131,6 @@ func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 		log.Fatal("Error looking for template: " + templ)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-}
-
-// The maxAge parameter allows use of a single method to set and delete cookie.
-// Default cookie valid for 1 day. Set age to -1 for deletion.
-func setCookie(w http.ResponseWriter, uuid string, maxAge int) {
-	c := http.Cookie{Name: COOKIE_NAME, Value: uuid, Path: "/", MaxAge: maxAge}
-	http.SetCookie(w, &c)
 }
 
 func main() {
