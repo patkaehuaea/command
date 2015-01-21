@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	VERSION_NUMBER    = "v1.1.0"
+	VERSION_NUMBER    = "v1.2.0"
 	LOCAL_TIME_LAYOUT = "3:04:05 PM"
 	UTC_TIME_LAYOUT   = "15:04:05 UTC"
 )
