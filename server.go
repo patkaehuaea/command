@@ -34,7 +34,7 @@ const (
 )
 
 var cwd, _ = os.Getwd()
-var templates = template.Must(template.ParseGlob(filepath.Join(cwd, "templates", "*.html")))
+var templates = template.Must(template.ParseGlob(filepath.Join(cwd, "templates", "*")))
 var users = people.NewUsers()
 
 // Debug(..) and Log(..) functions simply wrap log calls
@@ -68,7 +68,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	info("Login handler called.", r)
 	if r.Method == "GET" {
 		log.Debug("Login GET method detected.")
-		renderTemplate(w, "login", nil)
+		renderTemplate(w, "login", "What is your name, Earthling?")
 	} else if r.Method == "POST" {
 		log.Debug("Login POST method detected.")
 		name := r.FormValue("name")
@@ -137,6 +137,7 @@ func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 }
 
 func main() {
+
 	portPtr := flag.String("port", "8080", "Web server binds to this port. Default is 8080.")
 	verbosePtr := flag.Bool("V", false, "Prints version number of program.")
 	flag.Parse()
@@ -151,6 +152,9 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", handleDefault)
+	// TODO: Log file system css access.
+	r.PathPrefix("/css/").Handler(http.StripPrefix("/css/", http.FileServer(http.Dir("css/"))))
+	r.HandleFunc("/time", handleTime)
 	r.HandleFunc("/index.html", handleDefault)
 	r.HandleFunc("/login", handleLogin)
 	r.HandleFunc("/logout", handleLogout)
