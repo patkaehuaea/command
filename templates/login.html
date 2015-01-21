@@ -1,13 +1,12 @@
 <html>
-<head>
-</head>
+{{template "head"}}
 <body>
-<form name="earthling_login" action="login" onsubmit="return validateForm()" method="post">
-  What is your name, Earthling?
-  <input type="text" name="name" size="50">
-  <input type="submit">
-</form>
-</p>
-<p>{{.}}</p>
+	{{template "upperMenu"}}
+	<form name="earthling_login" action="login" onsubmit="return validateForm()" method="post">
+		{{.}}
+		<input type="text" name="name" size="50">
+		<input type="submit">
+	</form>
+	{{template "lowerMenu"}}
 </body>
 </html>
