@@ -1,0 +1,8 @@
+<seelog minlevel="trace">
+	<outputs formatid="common">
+		<console/>
+	</outputs>
+	<formats>
+		<format id="common" format="%Date %t %Time %t [%LEVEL] %t %File %t %Func %t %Line %t %Msg %n"/>
+	</formats>
+</seelog>
