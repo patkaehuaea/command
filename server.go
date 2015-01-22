@@ -15,7 +15,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/cihub/seelog"
 	"github.com/gorilla/mux"
 	"github.com/patkaehuaea/server/cookie"
 	"github.com/patkaehuaea/server/people"
@@ -37,21 +37,8 @@ var cwd, _ = os.Getwd()
 var templates = template.Must(template.ParseGlob(filepath.Join(cwd, "templates", "*")))
 var users = people.NewUsers()
 
-// Debug(..) and Log(..) functions simply wrap log calls
-// with fields. Possible to define custom formatter on logrus
-// library at later time.
-func debug(msg string, r *http.Request) {
-	log.WithFields(log.Fields{
-		"header":      r.Header["Cookie"],
-		"remote addr": r.RemoteAddr,
-		"method":      r.Method,
-		"time":        time.Now().Format(LOCAL_TIME_LAYOUT),
-		"url":         r.URL,
-	}).Debug(msg)
-}
-
 func handleDefault(w http.ResponseWriter, r *http.Request) {
-	info("Default handler called.", r)
+	log.Info("Default handler called.")
 	id, _ := cookie.UUIDValue(r)
 	if name := users.Name(id); name != "" {
 		log.Debug("User: " + name + " viewing site.")
@@ -65,7 +52,7 @@ func handleDefault(w http.ResponseWriter, r *http.Request) {
 // Handling GET and POST methods can be implemented on separate /login
 // handlers with mux. Left as-is for clarity of flow.
 func handleLogin(w http.ResponseWriter, r *http.Request) {
-	info("Login handler called.", r)
+	log.Info("Login handler called.")
 	if r.Method == "GET" {
 		log.Debug("Login GET method detected.")
 		renderTemplate(w, "login", "What is your name, Earthling?")
@@ -94,20 +81,20 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
-	info("Logout handler called.", r)
+	log.Info("Logout handler called.")
 	// Invalidate data along and set MaxAge to avoid accidental persistence issues.
 	http.SetCookie(w, cookie.NewCookie("deleted", cookie.DELETE_AGE))
 	renderTemplate(w, "logged-out", nil)
 }
 
 func handleNotFound(w http.ResponseWriter, r *http.Request) {
-	info("Not found handler called.", r)
+	log.Info("Not found handler called.")
 	w.WriteHeader(http.StatusNotFound)
 	renderTemplate(w, "404", nil)
 }
 
 func handleTime(w http.ResponseWriter, r *http.Request) {
-	info("Time handler called.", r)
+	log.Info("Time handler called.")
 	id, _ := cookie.UUIDValue(r)
 	// Personalized message will only display if user's cookie contains an id
 	// and that id is found in the users table. Template handles display logic.
@@ -117,26 +104,19 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "time", params)
 }
 
-func info(msg string, r *http.Request) {
-	log.WithFields(log.Fields{
-		"header":      r.Header["Cookie"],
-		"remote addr": r.RemoteAddr,
-		"method":      r.Method,
-		"time":        time.Now().Format(LOCAL_TIME_LAYOUT),
-		"url":         r.URL,
-	}).Info(msg)
-}
-
 // credit: https://golang.org/doc/articles/wiki/#tmp_10
 func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 	err := templates.ExecuteTemplate(w, templ+".html", d)
 	if err != nil {
-		log.Fatal("Error looking for template: " + templ)
+		log.Critical("Error looking for template: " + templ)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func main() {
+
+	// Calls to setup logging.
+	defer log.Flush()
 
 	portPtr := flag.String("port", "8080", "Web server binds to this port. Default is 8080.")
 	verbosePtr := flag.Bool("V", false, "Prints version number of program.")
@@ -147,8 +127,6 @@ func main() {
 		fmt.Printf("Version number: %s \n", VERSION_NUMBER)
 		os.Exit(1)
 	}
-
-	log.SetLevel(log.InfoLevel)
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", handleDefault)
@@ -161,5 +139,5 @@ func main() {
 	r.HandleFunc("/time", handleTime)
 	r.NotFoundHandler = http.HandlerFunc(handleNotFound)
 	http.Handle("/", r)
-	log.Fatal(http.ListenAndServe(portParam, nil))
+	log.Critical(http.ListenAndServe(portParam, nil))
 }
