@@ -29,6 +29,7 @@ import (
 
 const (
 	VERSION_NUMBER    = "v1.2.0"
+	SEELOG_CONF_DIR   = "etc"
 	LOCAL_TIME_LAYOUT = "3:04:05 PM"
 	UTC_TIME_LAYOUT   = "15:04:05 UTC"
 )
@@ -108,20 +109,24 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 	err := templates.ExecuteTemplate(w, templ+".html", d)
 	if err != nil {
-		log.Critical("Error looking for template: " + templ)
+		log.Error("Error looking for template: " + templ)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func main() {
 
-	// Calls to setup logging.
-	defer log.Flush()
-
 	portPtr := flag.String("port", "8080", "Web server binds to this port. Default is 8080.")
 	verbosePtr := flag.Bool("V", false, "Prints version number of program.")
 	flag.Parse()
 	portParam := ":" + *portPtr
+
+	// Calls to setup logging.
+	logger, err := log.LoggerFromConfigAsFile(filepath.Join(SEELOG_CONF_DIR, "seelog.xml"))
+	if err != nil {
+		log.Critical(err)
+	}
+	log.ReplaceLogger(logger)
 
 	if *verbosePtr {
 		fmt.Printf("Version number: %s \n", VERSION_NUMBER)
