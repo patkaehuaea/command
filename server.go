@@ -32,13 +32,13 @@ const (
 	SERVER_PORT          = ":8080"
 	SEELOG_CONF_DIR      = "etc"
 	SEELOG_CONF_FILE     = "seelog.xml"
+	TEMPL_DIR            = "templates"
 	TEMPL_FILE_EXTENSION = ".tmpl"
 	LOCAL_TIME_LAYOUT    = "3:04:05 PM"
 	UTC_TIME_LAYOUT      = "15:04:05 UTC"
 )
 
 var (
-	cwd, _    = os.Getwd()
 	templates *template.Template
 	users     = people.NewUsers()
 )
@@ -120,25 +120,28 @@ func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 }
 
 func main() {
-	port := flag.String("port", SERVER_PORT, "Web server binds to this port. Default is 8080.")
-	templDir := flag.String("templates", "templates", "Directory relative to executable where templates are stored.")
 	logConf := flag.String("log", SEELOG_CONF_FILE, "Name of log configuration file in etc directory relative to executable.")
+	port := flag.String("port", SERVER_PORT, "Web server binds to this port. Default is 8080.")
+	templDir := flag.String("templates", TEMPL_DIR, "Directory relative to executable where templates are stored.")
 	verbose := flag.Bool("V", false, "Prints version number of program.")
 	flag.Parse()
-	// TODO: Handle error when no *.templ files exist in directory and when bad format.
-	// Restricting parsing to *.templ prevents server from attempting to parse irrelevant files
-	// in a given directory like .DS_STORE.
-	templates = template.Must(template.ParseGlob(filepath.Join(cwd, *templDir, "*"+TEMPL_FILE_EXTENSION)))
 
 	if *verbose {
 		fmt.Printf("Version number: %s \n", VERSION_NUMBER)
 		os.Exit(1)
 	}
 
+	cwd, _ := os.Getwd()
+
+	// TODO: Handle error when no *.templ files exist in directory and when bad format.
+	// Restricting parsing to *.templ prevents server from attempting to parse irrelevant files
+	// in a given directory like .DS_STORE.
+	templates = template.Must(template.ParseGlob(filepath.Join(cwd, *templDir, "*"+TEMPL_FILE_EXTENSION)))
+
 	// TODO: Handle errors opening log file.
 	// Server will fail to default log configuration as defined by seelog package
 	// if unable to open file.
-	logger, err := log.LoggerFromConfigAsFile(filepath.Join(SEELOG_CONF_DIR, *logConf))
+	logger, err := log.LoggerFromConfigAsFile(filepath.Join(cwd, SEELOG_CONF_DIR, *logConf))
 	if err != nil {
 		log.Critical(err)
 	}
