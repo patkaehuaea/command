@@ -28,15 +28,19 @@ import (
 )
 
 const (
-	VERSION_NUMBER    = "v1.2.1"
-	SEELOG_CONF_DIR   = "etc"
-	LOCAL_TIME_LAYOUT = "3:04:05 PM"
-	UTC_TIME_LAYOUT   = "15:04:05 UTC"
+	VERSION_NUMBER       = "v1.2.1"
+	SEELOG_CONF_DIR      = "etc"
+	SEELOG_CONF_FILE     = "seelog.xml"
+	TEMPL_FILE_EXTENSION = ".tmpl"
+	LOCAL_TIME_LAYOUT    = "3:04:05 PM"
+	UTC_TIME_LAYOUT      = "15:04:05 UTC"
 )
 
-var cwd, _ = os.Getwd()
-var templates = template.Must(template.ParseGlob(filepath.Join(cwd, "templates", "*")))
-var users = people.NewUsers()
+var (
+	cwd, _    = os.Getwd()
+	templates *template.Template
+	users     = people.NewUsers()
+)
 
 func handleDefault(w http.ResponseWriter, r *http.Request) {
 	log.Info("Default handler called.")
@@ -107,7 +111,7 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 
 // credit: https://golang.org/doc/articles/wiki/#tmp_10
 func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
-	err := templates.ExecuteTemplate(w, templ+".html", d)
+	err := templates.ExecuteTemplate(w, templ+TEMPL_FILE_EXTENSION, d)
 	if err != nil {
 		log.Error("Error looking for template: " + templ)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -115,23 +119,22 @@ func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 }
 
 func main() {
-
-	portPtr := flag.String("port", "8080", "Web server binds to this port. Default is 8080.")
-	verbosePtr := flag.Bool("V", false, "Prints version number of program.")
+	port := flag.String("port", ":8080", "Web server binds to this port. Default is 8080.")
+	templDir := flag.String("templates", "templates", "Directory relative to executable where templates are stored.")
+	verbose := flag.Bool("V", false, "Prints version number of program.")
 	flag.Parse()
-	portParam := ":" + *portPtr
+	templates = template.Must(template.ParseGlob(filepath.Join(cwd, *templDir, "*")))
 
-	// Calls to setup logging.
-	logger, err := log.LoggerFromConfigAsFile(filepath.Join(SEELOG_CONF_DIR, "seelog.xml"))
+	if *verbose {
+		fmt.Printf("Version number: %s \n", VERSION_NUMBER)
+		os.Exit(1)
+	}
+
+	logger, err := log.LoggerFromConfigAsFile(filepath.Join(SEELOG_CONF_DIR, SEELOG_CONF_FILE))
 	if err != nil {
 		log.Critical(err)
 	}
 	log.ReplaceLogger(logger)
-
-	if *verbosePtr {
-		fmt.Printf("Version number: %s \n", VERSION_NUMBER)
-		os.Exit(1)
-	}
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", handleDefault)
@@ -144,5 +147,5 @@ func main() {
 	r.HandleFunc("/time", handleTime)
 	r.NotFoundHandler = http.HandlerFunc(handleNotFound)
 	http.Handle("/", r)
-	log.Critical(http.ListenAndServe(portParam, nil))
+	log.Critical(http.ListenAndServe(*port, nil))
 }
