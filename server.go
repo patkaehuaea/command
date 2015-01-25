@@ -39,7 +39,6 @@ const (
 )
 
 var (
-	cwd, _    = os.Getwd()
 	templates *template.Template
 	users     = people.NewUsers()
 )
@@ -133,7 +132,7 @@ func main() {
 	}
 
 	// Restricting parsing to *.templ prevents server from attempting to parse irrelevant files
-	// in a given directory like .DS_STORE. Allowing *templDir to be anywhere on filesystem
+	// in a given directory like .DS_STORE. Also, allowing *templDir to be anywhere on filesystem
 	// as opposed to being required to be relative to cwd.
 	var err error
 	templates, err = template.ParseGlob(filepath.Join(*templDir, "*"+TEMPL_FILE_EXTENSION))
@@ -144,6 +143,7 @@ func main() {
 
 	// Server will fail to default log configuration as defined by seelog package
 	// if unable to open file. Assumes *logConf is in SEELOG_CONF_DIR relative to cwd.
+	cwd, _ := os.Getwd()
 	logger, err := log.LoggerFromConfigAsFile(filepath.Join(cwd, SEELOG_CONF_DIR, *logConf))
 	if err != nil {
 		log.Error(err)
