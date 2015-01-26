@@ -110,6 +110,16 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "time", params)
 }
 
+// credit: http://tinyurl.com/kwc4hls
+func logFileServer(h http.Handler) http.Handler {
+	// Anonymous enclosure called on function implementing Handler interface
+	// allows logging to occur before request is handled.
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Info("File server called.")
+		h.ServeHTTP(w, r)
+	})
+}
+
 // credit: https://golang.org/doc/articles/wiki/#tmp_10
 func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 	err := templates.ExecuteTemplate(w, templ+TEMPL_FILE_EXTENSION, d)
@@ -153,7 +163,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", handleDefault)
 	// TODO: Log file system css access.
-	r.PathPrefix("/css/").Handler(http.StripPrefix("/css/", http.FileServer(http.Dir("css/"))))
+	r.PathPrefix("/css/").Handler(logFileServer(http.StripPrefix("/css/", http.FileServer(http.Dir("css/")))))
 	r.HandleFunc("/time", handleTime)
 	r.HandleFunc("/index.html", handleDefault)
 	r.HandleFunc("/login", handleLogin)
