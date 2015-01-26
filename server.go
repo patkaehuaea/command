@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	VERSION_NUMBER       = "v1.2.2"
+	VERSION_NUMBER       = "v1.2.3"
 	SERVER_PORT          = ":8080"
 	SEELOG_CONF_DIR      = "etc"
 	SEELOG_CONF_FILE     = "seelog.xml"
@@ -113,7 +113,7 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 // credit: http://tinyurl.com/kwc4hls
 func logFileServer(h http.Handler) http.Handler {
 	// Anonymous enclosure called on function implementing Handler interface
-	// allows logging to occur before request is handled.
+	// allows logging to occur before request is handled. 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Info("File server called.")
 		h.ServeHTTP(w, r)
