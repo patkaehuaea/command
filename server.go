@@ -57,7 +57,6 @@ func handleDefault(w http.ResponseWriter, r *http.Request) {
 
 func handleDisplayLogin(w http.ResponseWriter, r *http.Request) {
 	log.Info("Login handler called.")
-	log.Debug("Login GET method detected.")
 	renderTemplate(w, "login", "What is your name, Earthling?")
 }
 
@@ -108,8 +107,6 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 
 // credit: http://tinyurl.com/kwc4hls
 func logFileServer(h http.Handler) http.Handler {
-	// Anonymous enclosure called on function implementing Handler interface
-	// allows logging to occur before request is handled.
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Info("File server called.")
 		h.ServeHTTP(w, r)
@@ -158,7 +155,6 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", handleDefault)
-	// TODO: Log file system css access.
 	r.PathPrefix("/css/").Handler(logFileServer(http.StripPrefix("/css/", http.FileServer(http.Dir("css/")))))
 	r.HandleFunc("/time", handleTime)
 	r.HandleFunc("/index.html", handleDefault)
