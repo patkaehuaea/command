@@ -55,34 +55,30 @@ func handleDefault(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Handling GET and POST methods can be implemented on separate /login
-// handlers with mux. Left as-is for clarity of flow.
-func handleLogin(w http.ResponseWriter, r *http.Request) {
+func handleDisplayLogin(w http.ResponseWriter, r *http.Request) {
 	log.Info("Login handler called.")
-	if r.Method == "GET" {
-		log.Debug("Login GET method detected.")
-		renderTemplate(w, "login", "What is your name, Earthling?")
-	} else if r.Method == "POST" {
-		log.Debug("Login POST method detected.")
-		name := r.FormValue("name")
-		// Allows first name, or first and last name in English characters with intervening space.
-		// Minimum length of name is two characters and maximum length of field is 71 characters
-		// including space.
-		if valid, _ := regexp.MatchString("^[a-zA-Z]{2,35} {0,1}[a-zA-Z]{0,35}$", name); valid {
-			log.Debug("Name matched regex.")
-			person := people.NewPerson(name)
-			users.Add(person)
-			http.SetCookie(w, cookie.NewCookie(person.ID, cookie.MAX_AGE))
-			http.Redirect(w, r, "/", http.StatusFound)
-			log.Debug("User: " + person.Name + " logged in.")
-			return
-		} else {
-			log.Debug("Invalid username. Rendering login page.")
-			w.WriteHeader(http.StatusBadRequest)
-			renderTemplate(w, "login", "C'mon, I need a name.")
-		}
+	log.Debug("Login GET method detected.")
+	renderTemplate(w, "login", "What is your name, Earthling?")
+}
+
+func handleProcessLogin(w http.ResponseWriter, r *http.Request) {
+	log.Info("Login handler called.")
+	name := r.FormValue("name")
+	// Allows first name, or first and last name in English characters with intervening space.
+	// Minimum length of name is two characters and maximum length of field is 71 characters
+	// including space.
+	if valid, _ := regexp.MatchString("^[a-zA-Z]{2,35} {0,1}[a-zA-Z]{0,35}$", name); valid {
+		log.Debug("Name matched regex.")
+		person := people.NewPerson(name)
+		users.Add(person)
+		http.SetCookie(w, cookie.NewCookie(person.ID, cookie.MAX_AGE))
+		http.Redirect(w, r, "/", http.StatusFound)
+		log.Debug("User: " + person.Name + " logged in.")
+		return
 	} else {
-		log.Debug("Login request method not handled.")
+		log.Debug("Invalid username. Rendering login page.")
+		w.WriteHeader(http.StatusBadRequest)
+		renderTemplate(w, "login", "C'mon, I need a name.")
 	}
 }
 
@@ -113,7 +109,7 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 // credit: http://tinyurl.com/kwc4hls
 func logFileServer(h http.Handler) http.Handler {
 	// Anonymous enclosure called on function implementing Handler interface
-	// allows logging to occur before request is handled. 
+	// allows logging to occur before request is handled.
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Info("File server called.")
 		h.ServeHTTP(w, r)
@@ -166,10 +162,12 @@ func main() {
 	r.PathPrefix("/css/").Handler(logFileServer(http.StripPrefix("/css/", http.FileServer(http.Dir("css/")))))
 	r.HandleFunc("/time", handleTime)
 	r.HandleFunc("/index.html", handleDefault)
-	r.HandleFunc("/login", handleLogin)
+	r.HandleFunc("/login", handleDisplayLogin).Methods("GET")
+	r.HandleFunc("/login", handleProcessLogin).Methods("POST")
 	r.HandleFunc("/logout", handleLogout)
 	r.HandleFunc("/time", handleTime)
 	r.NotFoundHandler = http.HandlerFunc(handleNotFound)
 	http.Handle("/", r)
+	// TODO: fix this
 	log.Critical(http.ListenAndServe(*port, nil))
 }
