@@ -13,9 +13,14 @@ package people
 import (
 	"log"
 	"os/exec"
+	"regexp"
 	"strings"
 	"sync"
 )
+
+// First name, or first and last name in English characters with intervening space.
+// Minimum two characters and max length 71 characters including space.
+const NAME_REGEX = "^[a-zA-Z]{2,35} {0,1}[a-zA-Z]{0,35}$"
 
 type Person struct {
 	Name string
@@ -27,6 +32,13 @@ type Person struct {
 // will cause Person ID to be blank.
 func NewPerson(name string) *Person {
 	return &Person{Name: name, ID: uuid()}
+}
+
+// Uses people.NAME_REGEX to determine if name passed as
+// parameter is valid.
+func FirstAndOrLastName(name string) (bool, error){
+	match, err := regexp.MatchString(NAME_REGEX, name)
+	return match, err
 }
 
 // For simplicity, was implimented as call to OS executable, but

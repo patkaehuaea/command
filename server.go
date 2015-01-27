@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"time"
 )
 
@@ -56,24 +55,20 @@ func handleDefault(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleDisplayLogin(w http.ResponseWriter, r *http.Request) {
-	log.Info("Login handler called.")
+	log.Info("Display login handler called.")
 	renderTemplate(w, "login", "What is your name, Earthling?")
 }
 
 func handleProcessLogin(w http.ResponseWriter, r *http.Request) {
-	log.Info("Login handler called.")
+	log.Info("Process login handler called.")
 	name := r.FormValue("name")
-	// Allows first name, or first and last name in English characters with intervening space.
-	// Minimum length of name is two characters and maximum length of field is 71 characters
-	// including space.
-	if valid, _ := regexp.MatchString("^[a-zA-Z]{2,35} {0,1}[a-zA-Z]{0,35}$", name); valid {
+	if valid, _ := people.FirstAndOrLastName(name); valid {
 		log.Debug("Name matched regex.")
 		person := people.NewPerson(name)
 		users.Add(person)
 		http.SetCookie(w, cookie.NewCookie(person.ID, cookie.MAX_AGE))
 		http.Redirect(w, r, "/", http.StatusFound)
 		log.Debug("User: " + person.Name + " logged in.")
-		return
 	} else {
 		log.Debug("Invalid username. Rendering login page.")
 		w.WriteHeader(http.StatusBadRequest)
@@ -83,7 +78,6 @@ func handleProcessLogin(w http.ResponseWriter, r *http.Request) {
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
 	log.Info("Logout handler called.")
-	// Invalidate data along and set MaxAge to avoid accidental persistence issues.
 	http.SetCookie(w, cookie.NewCookie("deleted", cookie.DELETE_AGE))
 	renderTemplate(w, "logged-out", nil)
 }
@@ -99,9 +93,11 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 	id, _ := cookie.UUIDValue(r)
 	// Personalized message will only display if user's cookie contains an id
 	// and that id is found in the users table. Template handles display logic.
-	params := map[string]interface{}{"localTime": time.Now().Format(LOCAL_TIME_LAYOUT),
-		"UTCTime": time.Now().Format(UTC_TIME_LAYOUT),
-		"name":    users.Name(id)}
+	params := map[string]interface{}{
+		"localTime": time.Now().Format(LOCAL_TIME_LAYOUT),
+		"UTCTime":   time.Now().Format(UTC_TIME_LAYOUT),
+		"name":      users.Name(id),
+	}
 	renderTemplate(w, "time", params)
 }
 
