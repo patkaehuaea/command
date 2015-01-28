@@ -130,9 +130,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Restricting parsing to *.templ prevents server from attempting to parse irrelevant files
-	// in a given directory like .DS_STORE. Also, allowing *templDir to be anywhere on filesystem
-	// as opposed to being required to be relative to cwd.
+	// Restrict parsing to *.templ to prevent fail on non-template files in a given directory
+	// like .DS_STORE.
 	var err error
 	templates, err = template.ParseGlob(filepath.Join(*templDir, "*"+TEMPL_FILE_EXTENSION))
 	if err != nil {
@@ -160,6 +159,7 @@ func main() {
 	r.HandleFunc("/time", handleTime)
 	r.NotFoundHandler = http.HandlerFunc(handleNotFound)
 	http.Handle("/", r)
-	// TODO: fix this
-	log.Critical(http.ListenAndServe(*port, nil))
+	if err := (http.ListenAndServe(*port, nil)) {
+		log.Critical(err)
+	}
 }
