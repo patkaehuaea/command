@@ -159,7 +159,7 @@ func main() {
 	r.HandleFunc("/time", handleTime)
 	r.NotFoundHandler = http.HandlerFunc(handleNotFound)
 	http.Handle("/", r)
-	if err := (http.ListenAndServe(*port, nil)) {
+	if err := (http.ListenAndServe(*port, nil)); err != nil {
 		log.Critical(err)
 	}
 }
