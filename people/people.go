@@ -100,8 +100,7 @@ func (u *Users) Name(id string) string {
 	u.RUnlock()
 	if p != nil {
 		return p.Name
-	} else {
-		return ""
 	}
+	return ""
 
 }
