@@ -1,4 +1,6 @@
 PACKAGES=github.com/patkaehuaea/server
+ARTIFACT_DIRS=$(GOPATH)/bin $(GOPATH)/out $(GOPATH)/pkg
+ZIP_DIR=$(HOME)
 GODOC_PORT=:6060
 
 all: fmt install
@@ -16,4 +18,15 @@ doc:
 	GOPATH=$(GOPATH) godoc -v --http=$(GODOC_PORT) --index=true
 
 clean:
-	go clean
+	GOPATH=$(GOPATH) go clean
+
+delartifacts:
+	@for i in $(ARTIFACT_DIRS); do \
+        echo "Deleteing files in $$i..."; \
+        GOPATH=$(GOPATH) /bin/rm -rf $$i/*; \
+    done
+
+zip:
+	(cd $(HOME) ; /usr/bin/zip -r $(HOME)/go.zip go)
+
+release: clean delartifacts zip
