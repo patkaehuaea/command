@@ -1,6 +1,7 @@
 PACKAGES=github.com/patkaehuaea/server
 ARTIFACT_DIRS=$(GOPATH)/bin $(GOPATH)/out $(GOPATH)/pkg
-ZIP_DIR=$(HOME)
+GO_PARENT_DIR=$(HOME)
+ZIP_DEST_DIR=$(HOME)
 GODOC_PORT=:6060
 
 all: fmt install
@@ -27,6 +28,6 @@ delartifacts:
     done
 
 zip:
-	(cd $(HOME) ; /usr/bin/zip -r $(HOME)/go.zip go)
+	(cd $(GO_PARENT_DIR) ; /usr/bin/zip -r $(ZIP_DEST_DIR)/go.zip go)
 
 release: clean delartifacts zip
