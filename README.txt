@@ -25,7 +25,7 @@ $ server -port="9001"
 
 To change the templates directory:
 
-$ server --templates /path/to/*.tmpl
+$ server --templates /path/to/
 
 
 To change the name of configuration file:
