@@ -9,7 +9,7 @@
 package cookie
 
 import (
-	log "github.com/Sirupsen/logrus"
+	log "github.com/cihub/seelog"
 	"net/http"
 )
 
