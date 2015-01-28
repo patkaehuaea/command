@@ -3,12 +3,12 @@
 //  Proprietary and confidential
 //  Written by Pat Kaehuaea, January 2015
 //
-// Package contains simple web server that binds to port 8080. Exectuable accepts
-// two parameters, --port to designate listen port, and -V to output the version
-// number of the program. Server provieds '/time' endpoint as well as '/login' '/logout'
-// and root pages '/', 'index.html'. Pages are rendered from templates that must be
-// located in a 'templates/' directory relative to the executable. This package uses
-// adjacent people package to maintain state as it relates to visits. State is lost
+// Package contains simple web server that binds to specified --port or 8080.
+// Exectuable accepts two parameters, --port to designate listen port,
+// and -V to output the version number of the program. Additional flag --templates
+// determines location of templates on filesystem and --log parameter provides
+// name of seelog configuration file in etc/. Server provieds '/time' endpoint as
+// well as '/login' '/logout' and root pages '/', 'index.html'. State is lost
 // upon program termination.
 package main
 
