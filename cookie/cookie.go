@@ -31,12 +31,13 @@ func NewCookie(value string, age int) *http.Cookie {
 // Given *http.Request, returns value of uuid cookie if present.
 // Returns "" and error if no cookie found named uuid. Performs
 // no check on validity of uuid before returning.
-func UUIDValue(r *http.Request) (string, error) {
+func UUIDCookieValue(r *http.Request) (string, error) {
 	log.Debug("Attempting to read " + COOKIE_NAME + " cookie from request.")
 	cookie, err := r.Cookie(COOKIE_NAME)
 	if err == http.ErrNoCookie {
 		log.Debug(COOKIE_NAME + " cookie not found in request.")
 		return "", http.ErrNoCookie
 	}
+	log.Debug("Cookie value: " + cookie.Value)
 	return cookie.Value, nil
 }
