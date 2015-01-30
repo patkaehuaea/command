@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	VERSION_NUMBER       = "v1.2.3"
+	VERSION_NUMBER       = "v1.2.4"
 	SERVER_PORT          = ":8080"
 	SEELOG_CONF_DIR      = "etc"
 	SEELOG_CONF_FILE     = "seelog.xml"
@@ -42,14 +42,13 @@ var (
 	users     = people.NewUsers()
 )
 
-func handleDefault(w http.ResponseWriter, r *http.Request) {
+func handleDefault(w http.ResponseWriter, r *http.Request, name string) {
 	log.Info("Default handler called.")
-	id, _ := cookie.UUIDValue(r)
-	if name := users.Name(id); name != "" {
+	if name != "" {
 		log.Debug("User: " + name + " viewing site.")
 		renderTemplate(w, "greetings", name)
 	} else {
-		log.Debug("No cookie found or value empty. Redirecting to login.")
+		log.Debug("Name is empty. Redirecting to login.")
 		http.Redirect(w, r, "/login", http.StatusFound)
 	}
 }
@@ -88,15 +87,13 @@ func handleNotFound(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "404", nil)
 }
 
-func handleTime(w http.ResponseWriter, r *http.Request) {
+func handleTime(w http.ResponseWriter, r *http.Request, name string) {
 	log.Info("Time handler called.")
-	id, _ := cookie.UUIDValue(r)
-	// Personalized message will only display if user's cookie contains an id
-	// and that id is found in the users table. Template handles display logic.
+	// Template will not render personal greeting if name blank.
 	params := map[string]interface{}{
 		"localTime": time.Now().Format(LOCAL_TIME_LAYOUT),
 		"UTCTime":   time.Now().Format(UTC_TIME_LAYOUT),
-		"name":      users.Name(id),
+		"name":      name,
 	}
 	renderTemplate(w, "time", params)
 }
@@ -115,6 +112,20 @@ func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 	if err != nil {
 		log.Error("Error looking for template: " + templ)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// Read 'uuid' cookie, then perform lookup in users before passing name
+// to calling handler. Centralizes cookie parsing and data lookup. Can
+// extend to pass more data to handlers in future.
+func uuidCookieToName(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		name := ""
+		if id, _ := cookie.UUIDCookieValue(r); id != "" {
+			name = users.Name(id)
+		}
+		log.Debug("Cookie value not found, or user not found.")
+		fn(w, r, name)
 	}
 }
 
@@ -149,14 +160,13 @@ func main() {
 	log.ReplaceLogger(logger)
 
 	r := mux.NewRouter()
-	r.HandleFunc("/", handleDefault)
+	r.HandleFunc("/", uuidCookieToName(handleDefault))
 	r.PathPrefix("/css/").Handler(logFileServer(http.StripPrefix("/css/", http.FileServer(http.Dir("css/")))))
-	r.HandleFunc("/time", handleTime)
-	r.HandleFunc("/index.html", handleDefault)
+	r.HandleFunc("/index.html", uuidCookieToName(handleDefault))
 	r.HandleFunc("/login", handleDisplayLogin).Methods("GET")
 	r.HandleFunc("/login", handleProcessLogin).Methods("POST")
 	r.HandleFunc("/logout", handleLogout)
-	r.HandleFunc("/time", handleTime)
+	r.HandleFunc("/time", uuidCookieToName(handleTime))
 	r.NotFoundHandler = http.HandlerFunc(handleNotFound)
 	http.Handle("/", r)
 	if err := (http.ListenAndServe(*port, nil)); err != nil {
