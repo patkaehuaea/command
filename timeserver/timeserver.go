@@ -17,6 +17,7 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	"github.com/gorilla/mux"
+	"github.com/patkaehuaea/command/config"
 	"github.com/patkaehuaea/timeserver/cookie"
 	"github.com/patkaehuaea/timeserver/people"
 	"html/template"
@@ -117,13 +118,22 @@ func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 }
 
 func main() {
-	logConf := flag.String("log", SEELOG_CONF_FILE, "Name of log configuration file in etc directory relative to executable.")
-	port := flag.String("port", SERVER_PORT, "Web server binds to this port. Default is 8080.")
-	templDir := flag.String("templates", TEMPL_DIR, "Directory relative to executable where templates are stored.")
-	verbose := flag.Bool("V", false, "Prints version number of program.")
-	flag.Parse()
 
-	if *verbose {
+	/*
+	Paramters surfaced via config pacakge used in this program:
+	*config.AuthHost
+	*config.AuthPort
+	*config.AuthTimeoutMS
+	*config.AvgRespMS
+	*config.DeviationMS
+	*config.LogConf
+	*config.MaxInFlight
+	*config.TimePort
+	*config.TmplDir
+	*config.Verbose
+	*/
+
+	if *config.verbose {
 		fmt.Printf("Version number: %s \n", VERSION_NUMBER)
 		os.Exit(1)
 	}
@@ -131,7 +141,7 @@ func main() {
 	// Restrict parsing to *.templ to prevent fail on non-template files in a given directory
 	// like .DS_STORE.
 	var err error
-	templates, err = template.ParseGlob(filepath.Join(*templDir, "*"+TEMPL_FILE_EXTENSION))
+	templates, err = template.ParseGlob(filepath.Join(*config.tmplDir, "*"+TEMPL_FILE_EXTENSION))
 	if err != nil {
 		log.Critical(err)
 		os.Exit(1)
@@ -140,7 +150,7 @@ func main() {
 	// Server will fail to default log configuration as defined by seelog package
 	// if unable to open file. Assumes *logConf is in SEELOG_CONF_DIR relative to cwd.
 	cwd, _ := os.Getwd()
-	logger, err := log.LoggerFromConfigAsFile(filepath.Join(cwd, SEELOG_CONF_DIR, *logConf))
+	logger, err := log.LoggerFromConfigAsFile(filepath.Join(cwd, SEELOG_CONF_DIR, *config.LogConf))
 	if err != nil {
 		log.Error(err)
 	}
@@ -156,7 +166,7 @@ func main() {
 	r.HandleFunc("/time", handleTime)
 	r.NotFoundHandler = http.HandlerFunc(handleNotFound)
 	http.Handle("/", r)
-	if err := (http.ListenAndServe(*port, nil)); err != nil {
+	if err := (http.ListenAndServe(*config.TimePort, nil)); err != nil {
 		log.Critical(err)
 	}
 }
