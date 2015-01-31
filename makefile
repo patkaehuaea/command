@@ -1,4 +1,4 @@
-PACKAGES=github.com/patkaehuaea/server
+PACKAGES=github.com/patkaehuaea/timeserver
 ARTIFACT_DIRS=$(GOPATH)/bin $(GOPATH)/out $(GOPATH)/pkg
 GO_PARENT_DIR=$(HOME)
 ZIP_DEST_DIR=$(HOME)
@@ -28,7 +28,7 @@ delartifacts:
     done
 
 run:
-	GOPATH=$(GOPATH) $(GOPATH)/bin/server
+	GOPATH=$(GOPATH) $(GOPATH)/bin/timeserver
 
 zip:
 	(cd $(GO_PARENT_DIR) ; /usr/bin/zip -r $(ZIP_DEST_DIR)/go.zip go)

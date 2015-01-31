@@ -17,8 +17,8 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	"github.com/gorilla/mux"
-	"github.com/patkaehuaea/server/cookie"
-	"github.com/patkaehuaea/server/people"
+	"github.com/patkaehuaea/timeserver/cookie"
+	"github.com/patkaehuaea/timeserver/people"
 	"html/template"
 	"net/http"
 	"os"
@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	VERSION_NUMBER       = "v1.2.5"
+	VERSION_NUMBER       = "v1.3.0"
 	SERVER_PORT          = ":8080"
 	SEELOG_CONF_DIR      = "etc"
 	SEELOG_CONF_FILE     = "seelog.xml"
