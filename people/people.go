@@ -94,13 +94,12 @@ func (u *Users) Exists(id string) bool {
 // Performs read lock on Users and returns
 // name of user with id. If not found, returns
 // empty string.
-func (u *Users) Name(id string) string {
+func (u *Users) Name(id string) (name string) {
 	u.RLock()
 	p := u.m[id]
 	u.RUnlock()
 	if p != nil {
-		return p.Name
+		name = p.Name
 	}
-	return ""
-
+	return name
 }

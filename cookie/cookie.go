@@ -10,6 +10,7 @@ package cookie
 
 import (
 	log "github.com/cihub/seelog"
+	"github.com/patkaehuaea/server/people"
 	"net/http"
 )
 
@@ -28,16 +29,19 @@ func NewCookie(value string, age int) *http.Cookie {
 	return &c
 }
 
-// Given *http.Request, returns value of uuid cookie if present.
-// Returns "" and error if no cookie found named uuid. Performs
-// no check on validity of uuid before returning.
-func UUIDCookieValue(r *http.Request) (string, error) {
+// Read 'uuid' cookie, then perform lookup in Users. Centralizes cookie parsing
+// and data lookup. Easily extended to make call to remote system.
+func UUIDCookieToName(r *http.Request, u *people.Users) (name string, err error) {
 	log.Debug("Attempting to read " + COOKIE_NAME + " cookie from request.")
+
 	cookie, err := r.Cookie(COOKIE_NAME)
-	if err == http.ErrNoCookie {
+	if  err == http.ErrNoCookie {
 		log.Debug(COOKIE_NAME + " cookie not found in request.")
-		return "", http.ErrNoCookie
+	} else {
+		uuid := cookie.Value
+		if name = u.Name(uuid) ; name == "" {
+			log.Debug("Cookie value not found, or user not found.")
+		}
 	}
-	log.Debug("Cookie value: " + cookie.Value)
-	return cookie.Value, nil
+	return name, err
 }
