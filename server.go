@@ -99,7 +99,7 @@ func handleTime(w http.ResponseWriter, r *http.Request, name string) {
 }
 
 // credit: http://tinyurl.com/kwc4hls
-func logFileServer(h http.Handler) http.Handler {
+func logFileRequest(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Info("File server called.")
 		h.ServeHTTP(w, r)
@@ -117,12 +117,12 @@ func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 
 // Read 'uuid' cookie, then perform lookup in users before passing name
 // to calling handler. Centralizes cookie parsing and data lookup. Can
-// extend to pass more data to handlers in future.
+// extend to make remote call and/or pass additional data to callers.
 func uuidCookieToName(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		name := ""
-		if id, _ := cookie.UUIDCookieValue(r); id != "" {
-			name = users.Name(id)
+		if uuid, _ := cookie.UUIDCookieValue(r); uuid != "" {
+			name = users.Name(uuid)
 		}
 		log.Debug("Cookie value not found, or user not found.")
 		fn(w, r, name)
@@ -161,7 +161,7 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", uuidCookieToName(handleDefault))
-	r.PathPrefix("/css/").Handler(logFileServer(http.StripPrefix("/css/", http.FileServer(http.Dir("css/")))))
+	r.PathPrefix("/css/").Handler(logFileRequest(http.StripPrefix("/css/", http.FileServer(http.Dir("css/")))))
 	r.HandleFunc("/index.html", uuidCookieToName(handleDefault))
 	r.HandleFunc("/login", handleDisplayLogin).Methods("GET")
 	r.HandleFunc("/login", handleProcessLogin).Methods("POST")
