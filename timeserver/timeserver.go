@@ -13,13 +13,12 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	log "github.com/cihub/seelog"
 	"github.com/gorilla/mux"
 	"github.com/patkaehuaea/command/config"
-	"github.com/patkaehuaea/timeserver/cookie"
-	"github.com/patkaehuaea/timeserver/people"
+	"github.com/patkaehuaea/command/timeserver/cookie"
+	"github.com/patkaehuaea/command/timeserver/people"
 	"html/template"
 	"net/http"
 	"os"
@@ -45,7 +44,7 @@ var (
 
 func handleDefault(w http.ResponseWriter, r *http.Request) {
 	log.Info("Default handler called.")
-	if name, _ := cookie.UUIDCookieToName(r, users); name != "" {
+	if name, _ := cookie.UUID(r); name != "" {
 		log.Debug("User: " + name + " viewing site.")
 		renderTemplate(w, "greetings", name)
 	} else {
@@ -90,7 +89,7 @@ func handleNotFound(w http.ResponseWriter, r *http.Request) {
 
 func handleTime(w http.ResponseWriter, r *http.Request) {
 	log.Info("Time handler called.")
-	name, _ := cookie.UUIDCookieToName(r, users)
+	name, _ := cookie.UUID(r)
 	// Template will not render personal greeting if name blank.
 	params := map[string]interface{}{
 		"localTime": time.Now().Format(LOCAL_TIME_LAYOUT),
@@ -120,20 +119,20 @@ func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 func main() {
 
 	/*
-	Paramters surfaced via config pacakge used in this program:
-	*config.AuthHost
-	*config.AuthPort
-	*config.AuthTimeoutMS
-	*config.AvgRespMS
-	*config.DeviationMS
-	*config.LogConf
-	*config.MaxInFlight
-	*config.TimePort
-	*config.TmplDir
-	*config.Verbose
+		Paramters surfaced via config pacakge used in this program:
+		*config.AuthHost
+		*config.AuthPort
+		*config.AuthTimeoutMS
+		*config.AvgRespMS
+		*config.DeviationMS
+		*config.LogConf
+		*config.MaxInFlight
+		*config.TimePort
+		*config.TmplDir
+		*config.Verbose
 	*/
 
-	if *config.verbose {
+	if *config.Verbose {
 		fmt.Printf("Version number: %s \n", VERSION_NUMBER)
 		os.Exit(1)
 	}
@@ -141,7 +140,7 @@ func main() {
 	// Restrict parsing to *.templ to prevent fail on non-template files in a given directory
 	// like .DS_STORE.
 	var err error
-	templates, err = template.ParseGlob(filepath.Join(*config.tmplDir, "*"+TEMPL_FILE_EXTENSION))
+	templates, err = template.ParseGlob(filepath.Join(*config.TmplDir, "*"+TEMPL_FILE_EXTENSION))
 	if err != nil {
 		log.Critical(err)
 		os.Exit(1)

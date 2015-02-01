@@ -9,39 +9,42 @@
 package cookie
 
 import (
-	log "github.com/cihub/seelog"
-	"github.com/patkaehuaea/timeserver/people"
-	"net/http"
+    "errors"
+    log "github.com/cihub/seelog"
+    "github.com/patkaehuaea/command/timeserver/people"
+    "net/http"
 )
 
 const (
-	COOKIE_NAME = "uuid"
-	COOKIE_PATH = "/"
-	MAX_AGE     = 86400
-	DELETE_AGE  = -1
+    COOKIE_NAME = "uuid"
+    COOKIE_PATH = "/"
+    MAX_AGE     = 86400
+    DELETE_AGE  = -1
 )
+
+var ErrNoUUID = errors.New("cookie: value not valid uuid")
 
 // Returns address of new cookie with 'uuid' name, value set to value
 // path to '/' and age set accordingly. Should utilize MAX_AGE when
 // creating, and DELETE_AGE when intending to delete cookie with overwright.
 func NewCookie(value string, age int) *http.Cookie {
-	c := http.Cookie{Name: COOKIE_NAME, Value: value, Path: COOKIE_PATH, MaxAge: age}
-	return &c
+    c := http.Cookie{Name: COOKIE_NAME, Value: value, Path: COOKIE_PATH, MaxAge: age}
+    return &c
 }
 
-// Read 'uuid' cookie, then perform lookup in Users. Centralizes cookie parsing
-// and data lookup. Easily extended to make call to remote system.
-func UUIDCookieToName(r *http.Request, u *people.Users) (name string, err error) {
-	log.Debug("Attempting to read " + COOKIE_NAME + " cookie from request.")
+func UUID(r *http.Request) (uuid string, err error) {
+    log.Debug("Attempting to get uuid from " + COOKIE_NAME + " cookie.")
 
-	cookie, err := r.Cookie(COOKIE_NAME)
-	if err == http.ErrNoCookie {
-		log.Debug(COOKIE_NAME + " cookie not found in request.")
-	} else {
-		uuid := cookie.Value
-		if name = u.Name(uuid); name == "" {
-			log.Debug("Cookie value not found, or user not found.")
-		}
-	}
-	return name, err
+    cookie, err := r.Cookie(COOKIE_NAME)
+    if err == http.ErrNoCookie {
+        log.Debug(COOKIE_NAME + " cookie not found in request.")
+    } else {
+        if ok, err := people.IsValidUUID(cookie.Value) ; ok {
+            uuid = cookie.Value
+        } else {
+            err = ErrNoUUID
+            log.Debug(err)
+        }
+    }
+    return uuid, err
 }

@@ -20,7 +20,10 @@ import (
 
 // First name, or first and last name in English characters with intervening space.
 // Minimum two characters and max length 71 characters including space.
-const NAME_REGEX = "^[a-zA-Z]{2,35} {0,1}[a-zA-Z]{0,35}$"
+const (
+	NAME_REGEX = "^[a-zA-Z]{2,35} {0,1}[a-zA-Z]{0,35}$"
+    UUID_REGEX = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+)
 
 type Person struct {
 	Name string
@@ -31,7 +34,7 @@ type Person struct {
 // to create ID. Failure of call to uuid method
 // will cause Person ID to be blank.
 func NewPerson(name string) *Person {
-	return &Person{Name: name, ID: uuid()}
+	return &Person{Name: name, ID: UUID()}
 }
 
 // Uses people.NAME_REGEX to determine if name passed as
@@ -41,9 +44,14 @@ func FirstAndOrLastName(name string) (bool, error) {
 	return match, err
 }
 
+func IsValidUUID(value string) (bool, error) {
+    match, err := regexp.MatchString(UUID_REGEX, value)
+    return match, err
+}
+
 // For simplicity, was implimented as call to OS executable, but
 // should be replaced with uuid package.
-func uuid() string {
+func UUID() string {
 	out, err := exec.Command("/usr/bin/uuidgen").Output()
 	if err != nil {
 		// TODO: Handle error case.

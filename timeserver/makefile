@@ -1,4 +1,4 @@
-PACKAGES=github.com/patkaehuaea/timeserver
+PACKAGES=github.com/patkaehuaea/command/timeserver
 ARTIFACT_DIRS=$(GOPATH)/bin $(GOPATH)/out $(GOPATH)/pkg
 GO_PARENT_DIR=$(HOME)
 ZIP_DEST_DIR=$(HOME)

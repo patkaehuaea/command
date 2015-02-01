@@ -48,7 +48,7 @@ func init() {
 
 	// Parameters for authserver:
 	DumpFile = flag.String("dumpfile", DUMP_FILE, "Name of file storing state as JSON document.")
-	CheckpointInt = flag.String("checkpoint-interval", CHECKPOINT_INT, "Dump state to file every checkpoint-interval seconds.")
+	CheckpointInt = flag.Int("checkpoint-interval", CHECKPOINT_INT, "Dump state to file every checkpoint-interval seconds.")
 
 	// Shared parameters:
 	AuthPort = flag.String("authport", AUTH_PORT, "Auth server binds to this port.")
