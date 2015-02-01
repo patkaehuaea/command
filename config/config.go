@@ -6,7 +6,7 @@ import (
 
 const (
 	AUTH_HOST        = "localhost"
-	AUTH_PORT        = ":9000"
+	AUTH_PORT        = ":9080"
 	AUTH_TIMEOUT_MS  = 1000
 	AVG_RESP_MS      = 1000
 	CHECKPOINT_INT   = 30
