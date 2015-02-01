@@ -11,7 +11,8 @@
 package people
 
 import (
-	"log"
+	"errors"
+	log "github.com/cihub/seelog"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -25,6 +26,9 @@ const (
     UUID_REGEX = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
 )
 
+var (
+	ErrInvalidPerson = errors.New("person: uuid or name not valid")
+)
 type Person struct {
 	Name string
 	ID   string
@@ -33,20 +37,25 @@ type Person struct {
 // Initializes by setting name and calling method
 // to create ID. Failure of call to uuid method
 // will cause Person ID to be blank.
-func NewPerson(name string) *Person {
-	return &Person{Name: name, ID: UUID()}
+func NewPerson(uuid string, name string) (p *Person, err error) {
+	if IsValidUUID(uuid) && IsValidName(name) {
+		p = &Person{Name: name, ID: uuid}
+	} else {
+		err = ErrInvalidPerson
+	}
+	return
 }
 
 // Uses people.NAME_REGEX to determine if name passed as
 // parameter is valid.
-func FirstAndOrLastName(name string) (bool, error) {
-	match, err := regexp.MatchString(NAME_REGEX, name)
-	return match, err
+func IsValidName(name string) bool {
+	match, _ := regexp.MatchString(NAME_REGEX, name)
+	return match
 }
 
-func IsValidUUID(value string) (bool, error) {
-    match, err := regexp.MatchString(UUID_REGEX, value)
-    return match, err
+func IsValidUUID(value string) bool {
+    match, _ := regexp.MatchString(UUID_REGEX, value)
+    return match
 }
 
 // For simplicity, was implimented as call to OS executable, but
@@ -55,7 +64,7 @@ func UUID() string {
 	out, err := exec.Command("/usr/bin/uuidgen").Output()
 	if err != nil {
 		// TODO: Handle error case.
-		log.Fatal(err)
+		log.Error(err)
 		return ""
 	}
 	// Command returns newline at end and must be stripped before use
@@ -89,6 +98,15 @@ func (u *Users) Delete(p *Person) {
 	u.Unlock()
 }
 
+// Deletes *Person from users map whose ID is p.ID. Acquires RW lock before accessing resource.
+func (u *Users) DumpFile() {
+	u.Lock()
+	for uuid, person := range u.m {
+		log.Info("{ uuid : " + uuid + " , name: " + person.Name + " }")
+	}
+	u.Unlock()
+}
+
 // Performs read lock on Users. Returns true
 // if user with id exists in map. Returns false
 // otherise.
@@ -104,10 +122,10 @@ func (u *Users) Exists(id string) bool {
 // empty string.
 func (u *Users) Name(id string) (name string) {
 	u.RLock()
+	defer u.RUnlock()
 	p := u.m[id]
-	u.RUnlock()
 	if p != nil {
 		name = p.Name
 	}
-	return name
+	return
 }
