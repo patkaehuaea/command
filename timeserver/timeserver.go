@@ -61,7 +61,7 @@ func handleDisplayLogin(w http.ResponseWriter, r *http.Request) {
 func handleProcessLogin(w http.ResponseWriter, r *http.Request) {
 	log.Info("Process login handler called.")
 	name := r.FormValue("name")
-	if valid, _ := people.FirstAndOrLastName(name); valid {
+	if valid, _ := people.IsValidName(name); valid {
 		log.Debug("Name matched regex.")
 		person := people.NewPerson(name)
 		users.Add(person)
