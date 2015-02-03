@@ -26,8 +26,9 @@ var users = people.NewUsers()
 
 func handleGetUser(w http.ResponseWriter, r *http.Request) {
 	log.Info("Get user handler called.")
+	log.Debug("UUID: " + r.FormValue("cookie"))
 
-	if uuid := r.Form.Get("cookie"); people.IsValidUUID(uuid) {
+	if uuid := r.FormValue("cookie"); people.IsValidUUID(uuid) {
 		log.Debug("Found valid uuid: " + uuid)
 		w.WriteHeader(http.StatusOK)
 		io.WriteString(w, users.Name(uuid))
@@ -39,9 +40,9 @@ func handleGetUser(w http.ResponseWriter, r *http.Request) {
 
 func handleSetUser(w http.ResponseWriter, r *http.Request) {
 	log.Info("Set user handler called.")
+	log.Debug("UUID: " + r.FormValue("cookie") + " Name: " + r.FormValue("name"))
 
-	person, err := people.NewPerson(r.Form.Get("cookie"), r.Form.Get("name"))
-	// TODO: Check if user already exists with key.
+	person, err := people.NewPerson(r.FormValue("cookie"), r.FormValue("name"))
 	if err == nil {
 		users.Add(person)
 		w.WriteHeader(http.StatusOK)
@@ -49,24 +50,14 @@ func handleSetUser(w http.ResponseWriter, r *http.Request) {
 		log.Debug(err)
 		w.WriteHeader(http.StatusBadRequest)
 	}
-
-	users.DumpFile()
 }
 
 func handleNotFound(w http.ResponseWriter, r *http.Request) {
+	log.Info(r.Method)
+	log.Info(r.Body)
+	log.Info(r.Header)
 	log.Info("Not found handler called.")
 	w.WriteHeader(http.StatusNotFound)
-}
-
-func parseFormWrapper(fn func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if err := r.ParseForm(); err == nil {
-			fn(w, r)
-		} else {
-			log.Error(err)
-		}
-		// TODO: Maybe return 500 here if unable to ParseForm
-	}
 }
 
 func main() {
@@ -88,8 +79,8 @@ func main() {
 	log.ReplaceLogger(logger)
 
 	r := mux.NewRouter()
-	r.HandleFunc("/get", parseFormWrapper(handleGetUser)).Methods("GET")
-	r.HandleFunc("/set", parseFormWrapper(handleSetUser)).Methods("POST")
+	r.HandleFunc("/get", handleGetUser).Methods("GET")
+	r.HandleFunc("/set", handleSetUser).Methods("POST")
 	r.NotFoundHandler = http.HandlerFunc(handleNotFound)
 	http.Handle("/", r)
 	if err := (http.ListenAndServe(*config.AuthPort, nil)); err != nil {
