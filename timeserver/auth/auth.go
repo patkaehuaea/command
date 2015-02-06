@@ -2,24 +2,66 @@ package auth
 
 import (
 	log "github.com/cihub/seelog"
-	"github.com/patkaehuaea/timeserver/cookie"
 	"net/http"
 )
 
-func Login(uuid string) (name string, err error) {
-	log.Debug("Attempting to perform login via remote system.")
+const (
+	AUTH_SCHEME = "http"
+    HOST_PORT_SEPARATOR = ":"
+)
 
-	// Remote request returns 200 and name, or 400 if bad.
-	// If no name, returns empty string.
-
-	return name, err
+type AuthClient struct {
+	Host   string
+	Port   string
+	Client *http.Client
 }
 
-func Register(name string) (err error) {
-	log.Debug("Attempting to register user with remote system.")
+func NewAuthClient(host string, port string, timeoutMS int) (ac *AuthClient, err error) {
+	t := time.Millisecond * time.Duration(timeoutMS)
+	c := &http.Client{Timeout: t}
+	ac = &AuthClient{Host: host, Port: port, Client: c}
+	return
+}
 
-	// Generate a new UUID for user.
-	uuid := people.UUID()
+func (ac *AuthClient) Get(uuid string) (name string, err error) {
+	log.Debug("Auth.Get called.")
 
-	// Send Person.ID and Person.Name
+    params := map[string]string{"cookie": uuid}
+    name , err = ac.request("get", params)
+    return
+}
+
+func (ac *AuthClient) Set(uuid string, name string) (err error) {
+	log.Debug("Auth.Set called.")
+
+    params := map[string]string{"cookie": uuid, "name": name}
+    _ , err = ac.request("set", params)
+    return
+}
+
+func (ac *AuthClient) request(path string, params map[string]string) (contents string, err error){
+	log.Debug("Auth.request called.")
+
+    uri := url.URL{Scheme: AUTH_SCHEME, Host: ac.Host + HOST_PORT_SEPARATOR + ac.Port, Path: path}
+    values := url.Values{}
+    for k, v := range params {
+        values.Add(k, v)
+    }
+    uri.RawQuery = values.Encode()
+
+    resp, getErr := ac.Client.Get(uri.String())
+    defer resp.Body.Close()
+    if getErr != nil {
+        err = getErr
+        return
+    }
+
+    body, readErr := ioutil.ReadAll(resp.Body)
+    if readErr != nil {
+        err = readErr
+        return
+    }
+
+    contents = string(body)
+    return
 }
