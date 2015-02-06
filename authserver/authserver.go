@@ -26,7 +26,7 @@ var users = people.NewUsers()
 
 func handleGetUser(w http.ResponseWriter, r *http.Request) {
 	log.Info("Get user handler called.")
-	log.Debug("UUID: " + r.FormValue("cookie"))
+	log.Info("Request parameter(s): " + "Cookie - " + r.FormValue("cookie"))
 
 	if uuid := r.FormValue("cookie"); people.IsValidUUID(uuid) {
 		log.Debug("Found valid uuid: " + uuid)
@@ -40,7 +40,8 @@ func handleGetUser(w http.ResponseWriter, r *http.Request) {
 
 func handleSetUser(w http.ResponseWriter, r *http.Request) {
 	log.Info("Set user handler called.")
-	log.Debug("UUID: " + r.FormValue("cookie") + " Name: " + r.FormValue("name"))
+	log.Info("Request parameter(s): " + "Cookie - " + r.FormValue("cookie") +
+		" Name - " + r.FormValue("name"))
 
 	person, err := people.NewPerson(r.FormValue("cookie"), r.FormValue("name"))
 	if err == nil {
@@ -53,9 +54,6 @@ func handleSetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleNotFound(w http.ResponseWriter, r *http.Request) {
-	log.Info(r.Method)
-	log.Info(r.Body)
-	log.Info(r.Header)
 	log.Info("Not found handler called.")
 	w.WriteHeader(http.StatusNotFound)
 }
@@ -80,7 +78,8 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/get", handleGetUser).Methods("GET")
-	r.HandleFunc("/set", handleSetUser).Methods("POST")
+	// Should be POST, but assignment spec requires GET.
+	r.HandleFunc("/set", handleSetUser).Methods("GET")
 	r.NotFoundHandler = http.HandlerFunc(handleNotFound)
 	http.Handle("/", r)
 	if err := (http.ListenAndServe(*config.AuthPort, nil)); err != nil {
