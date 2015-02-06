@@ -36,7 +36,7 @@ func NewPerson(name string) *Person {
 
 // Uses people.NAME_REGEX to determine if name passed as
 // parameter is valid.
-func FirstAndOrLastName(name string) (bool, error){
+func FirstAndOrLastName(name string) (bool, error) {
 	match, err := regexp.MatchString(NAME_REGEX, name)
 	return match, err
 }

@@ -39,7 +39,7 @@ const (
 
 var (
 	templates *template.Template
-	users     = people.NewUsers()
+	users     *people.Users
 )
 
 func handleDefault(w http.ResponseWriter, r *http.Request) {
@@ -136,6 +136,8 @@ func main() {
 		log.Critical(err)
 		os.Exit(1)
 	}
+
+	users = people.NewUsers()
 
 	// Server will fail to default log configuration as defined by seelog package
 	// if unable to open file. Assumes *logConf is in SEELOG_CONF_DIR relative to cwd.

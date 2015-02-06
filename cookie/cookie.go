@@ -35,11 +35,11 @@ func UUIDCookieToName(r *http.Request, u *people.Users) (name string, err error)
 	log.Debug("Attempting to read " + COOKIE_NAME + " cookie from request.")
 
 	cookie, err := r.Cookie(COOKIE_NAME)
-	if  err == http.ErrNoCookie {
+	if err == http.ErrNoCookie {
 		log.Debug(COOKIE_NAME + " cookie not found in request.")
 	} else {
 		uuid := cookie.Value
-		if name = u.Name(uuid) ; name == "" {
+		if name = u.Name(uuid); name == "" {
 			log.Debug("Cookie value not found, or user not found.")
 		}
 	}
