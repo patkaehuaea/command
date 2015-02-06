@@ -17,6 +17,7 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/gorilla/mux"
 	"github.com/patkaehuaea/command/config"
+	"github.com/patkaehuaea/command/timeserver/auth"
 	"github.com/patkaehuaea/command/timeserver/cookie"
 	"github.com/patkaehuaea/command/timeserver/people"
 	"html/template"
@@ -28,7 +29,6 @@ import (
 
 const (
 	VERSION_NUMBER       = "v1.3.0"
-	SERVER_PORT          = ":8080"
 	SEELOG_CONF_DIR      = "etc"
 	SEELOG_CONF_FILE     = "seelog.xml"
 	TEMPL_DIR            = "templates"
@@ -37,19 +37,35 @@ const (
 	UTC_TIME_LAYOUT      = "15:04:05 UTC"
 )
 
-var (
-	templates *template.Template
-	users     = people.NewUsers()
-)
+var templates *template.Template
+var authClient *auth.AuthClient
+
+func getUUIDThenName(r *http.Request) (name string, err error) {
+	log.Info("Called getUUIDThenname function.")
+	uuid, uuidErr := cookie.UUID(r)
+	if uuidErr != nil {
+		log.Warn(uuidErr)
+		err = uuidErr
+		return
+	}
+	response, authErr := authClient.Get(uuid)
+	if authErr != nil {
+		log.Warn(authErr)
+		err = authErr
+		return
+	}
+	name = response
+	return
+}
 
 func handleDefault(w http.ResponseWriter, r *http.Request) {
 	log.Info("Default handler called.")
-	if name, _ := cookie.UUID(r); name != "" {
-		log.Debug("User: " + name + " viewing site.")
-		renderTemplate(w, "greetings", name)
-	} else {
-		log.Debug("Name is empty. Redirecting to login.")
+
+	if name, err := getUUIDThenName(r); err != nil {
 		http.Redirect(w, r, "/login", http.StatusFound)
+	} else {
+		log.Debug(name + " viewing site.")
+		renderTemplate(w, "greetings", name)
 	}
 }
 
@@ -61,15 +77,21 @@ func handleDisplayLogin(w http.ResponseWriter, r *http.Request) {
 func handleProcessLogin(w http.ResponseWriter, r *http.Request) {
 	log.Info("Process login handler called.")
 	name := r.FormValue("name")
-	if valid, _ := people.IsValidName(name); valid {
+
+	if valid := people.IsValidName(name); valid {
 		log.Debug("Name matched regex.")
-		person := people.NewPerson(name)
-		users.Add(person)
-		http.SetCookie(w, cookie.NewCookie(person.ID, cookie.MAX_AGE))
-		http.Redirect(w, r, "/", http.StatusFound)
-		log.Debug("User: " + person.Name + " logged in.")
+		uuid := people.UUID()
+		if err := authClient.Set(uuid, name); err != nil {
+			log.Error(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			renderTemplate(w, "500", err.Error())
+		} else {
+			http.SetCookie(w, cookie.NewCookie(uuid, cookie.MAX_AGE))
+			http.Redirect(w, r, "/", http.StatusFound)
+			log.Info(name + " registered on site.")
+		}
 	} else {
-		log.Debug("Invalid username. Rendering login page.")
+		log.Debug("Invalid username or registration failed.")
 		w.WriteHeader(http.StatusBadRequest)
 		renderTemplate(w, "login", "C'mon, I need a name.")
 	}
@@ -89,8 +111,9 @@ func handleNotFound(w http.ResponseWriter, r *http.Request) {
 
 func handleTime(w http.ResponseWriter, r *http.Request) {
 	log.Info("Time handler called.")
-	name, _ := cookie.UUID(r)
-	// Template will not render personal greeting if name blank.
+	name, _ := getUUIDThenName(r)
+	// If name is blank, template will not render
+	// personalized greeting.
 	params := map[string]interface{}{
 		"localTime": time.Now().Format(LOCAL_TIME_LAYOUT),
 		"UTCTime":   time.Now().Format(UTC_TIME_LAYOUT),
@@ -145,6 +168,8 @@ func main() {
 		log.Critical(err)
 		os.Exit(1)
 	}
+
+	authClient = auth.NewAuthClient(*config.AuthHost, *config.AuthPort, *config.AuthTimeoutMS)
 
 	// Server will fail to default log configuration as defined by seelog package
 	// if unable to open file. Assumes *logConf is in SEELOG_CONF_DIR relative to cwd.

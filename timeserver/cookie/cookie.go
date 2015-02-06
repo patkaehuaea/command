@@ -39,7 +39,7 @@ func UUID(r *http.Request) (uuid string, err error) {
     if err == http.ErrNoCookie {
         log.Debug(COOKIE_NAME + " cookie not found in request.")
     } else {
-        if ok, err := people.IsValidUUID(cookie.Value) ; ok {
+        if valid := people.IsValidUUID(cookie.Value) ; valid {
             uuid = cookie.Value
         } else {
             err = ErrNoUUID
