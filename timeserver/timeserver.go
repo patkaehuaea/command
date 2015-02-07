@@ -17,6 +17,7 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/gorilla/mux"
 	"github.com/patkaehuaea/command/config"
+	"github.com/patkaehuaea/command/stats"
 	"github.com/patkaehuaea/command/timeserver/auth"
 	"github.com/patkaehuaea/command/timeserver/cookie"
 	"github.com/patkaehuaea/command/timeserver/people"
@@ -29,7 +30,7 @@ import (
 )
 
 const (
-	VERSION_NUMBER       = "v2.0.0"
+	VERSION_NUMBER       = "v2.1.0"
 	SEELOG_CONF_DIR      = "etc"
 	SEELOG_CONF_FILE     = "seelog.xml"
 	TEMPL_DIR            = "templates"
@@ -39,8 +40,9 @@ const (
 )
 
 var (
-	templates  *template.Template
 	authClient *auth.AuthClient
+	inFlight   *stats.ConcurrentRequests
+	templates  *template.Template
 )
 
 // Credit: http://goo.gl/MsxPHk
@@ -76,7 +78,7 @@ func handleDefault(w http.ResponseWriter, r *http.Request) {
 	if name, err := getUUIDThenName(r); err != nil {
 		http.Redirect(w, r, "/login", http.StatusFound)
 	} else {
-		log.Debug("timeserver: + " + name + " viewing site.")
+		log.Debug("timeserver: " + name + " viewing site.")
 		renderTemplate(w, "greetings", name)
 	}
 }
@@ -96,9 +98,7 @@ func handleProcessLogin(w http.ResponseWriter, r *http.Request) {
 		if err := authClient.Set(uuid, name); err != nil {
 			log.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
-			// Wouldn't typicall print hacker friendly error
-			// messages to webpage but useful for this project.
-			renderTemplate(w, "500", err.Error())
+			renderTemplate(w, "500", nil)
 		} else {
 			http.SetCookie(w, cookie.NewCookie(uuid, cookie.MAX_AGE))
 			http.Redirect(w, r, "/", http.StatusFound)
@@ -148,6 +148,22 @@ func logFileRequest(h http.Handler) http.Handler {
 	})
 }
 
+func throttle(fn func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if _, err := inFlight.Add(); err != nil {
+			log.Error(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			renderTemplate(w, "500", nil)
+		} else {
+			fn(w, r)
+		}
+
+		if _, err := inFlight.Subtract(); err != nil {
+			log.Error(err)
+		}
+	}
+}
+
 // credit: https://golang.org/doc/articles/wiki/#tmp_10
 func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 	err := templates.ExecuteTemplate(w, templ+TEMPL_FILE_EXTENSION, d)
@@ -189,6 +205,8 @@ func main() {
 
 	authClient = auth.NewAuthClient(*config.AuthHost, *config.AuthPort, *config.AuthTimeoutMS)
 
+	inFlight = stats.NewCR(*config.MaxInFlight)
+
 	// Server will fail to default log configuration as defined by seelog package
 	// if unable to open file. Assumes *logConf is in SEELOG_CONF_DIR relative to cwd.
 	cwd, _ := os.Getwd()
@@ -199,13 +217,13 @@ func main() {
 	log.ReplaceLogger(logger)
 
 	r := mux.NewRouter()
-	r.HandleFunc("/", handleDefault)
+	r.HandleFunc("/", throttle(handleDefault))
 	r.PathPrefix("/css/").Handler(logFileRequest(http.StripPrefix("/css/", http.FileServer(http.Dir("css/")))))
-	r.HandleFunc("/index.html", handleDefault)
-	r.HandleFunc("/login", handleDisplayLogin).Methods("GET")
-	r.HandleFunc("/login", handleProcessLogin).Methods("POST")
-	r.HandleFunc("/logout", handleLogout)
-	r.HandleFunc("/time", handleTime)
+	r.HandleFunc("/index.html", throttle(handleDefault))
+	r.HandleFunc("/login", throttle(handleDisplayLogin)).Methods("GET")
+	r.HandleFunc("/login", throttle(handleProcessLogin)).Methods("POST")
+	r.HandleFunc("/logout", throttle(handleLogout))
+	r.HandleFunc("/time", throttle(handleTime))
 	r.NotFoundHandler = http.HandlerFunc(handleNotFound)
 	http.Handle("/", r)
 	if err := (http.ListenAndServe(*config.TimePort, nil)); err != nil {
