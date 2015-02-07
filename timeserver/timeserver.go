@@ -148,28 +148,29 @@ func logFileRequest(h http.Handler) http.Handler {
 	})
 }
 
-func throttle(fn func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if _, err := inFlight.Add(); err != nil {
-			log.Error(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate(w, "500", nil)
-		} else {
-			fn(w, r)
-		}
-
-		if _, err := inFlight.Subtract(); err != nil {
-			log.Error(err)
-		}
-	}
-}
-
 // credit: https://golang.org/doc/articles/wiki/#tmp_10
 func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 	err := templates.ExecuteTemplate(w, templ+TEMPL_FILE_EXTENSION, d)
 	if err != nil {
 		log.Error("timeserver: Error looking for template: " + templ)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func throttle(fn func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := inFlight.Add(); err != nil {
+			log.Error(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			renderTemplate(w, "500", nil)
+		} else {
+			fn(w, r)
+			// Only subtract if stat was incremembted otherwise
+			// may attempt to subtract below stats.MIN_VALUE.
+			if err := inFlight.Subtract(); err != nil {
+				log.Error(err)
+			}
+		}
 	}
 }
 
