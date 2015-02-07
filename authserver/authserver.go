@@ -25,23 +25,20 @@ const (
 var users = people.NewUsers()
 
 func handleGetUser(w http.ResponseWriter, r *http.Request) {
-	log.Info("Get user handler called.")
-	log.Info("Request parameter(s): " + "Cookie - " + r.FormValue("cookie"))
+	log.Info("authserver: Get user handler called.")
 
 	if uuid := r.FormValue("cookie"); people.IsValidUUID(uuid) {
-		log.Debug("Found valid uuid: " + uuid)
+		log.Debug("authserver: Found valid uuid: " + uuid)
 		w.WriteHeader(http.StatusOK)
 		io.WriteString(w, users.Name(uuid))
 	} else {
-		log.Debug("UUID not valid, or not found in users.")
+		log.Debug("authserver: UUID not valid, or not found in users.")
 		w.WriteHeader(http.StatusBadRequest)
 	}
 }
 
 func handleSetUser(w http.ResponseWriter, r *http.Request) {
-	log.Info("Set user handler called.")
-	log.Info("Request parameter(s): " + "Cookie - " + r.FormValue("cookie") +
-		" Name - " + r.FormValue("name"))
+	log.Info("authserver: Set user handler called.")
 
 	person, err := people.NewPerson(r.FormValue("cookie"), r.FormValue("name"))
 	if err == nil {
@@ -54,7 +51,7 @@ func handleSetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleNotFound(w http.ResponseWriter, r *http.Request) {
-	log.Info("Not found handler called.")
+	log.Info("authserver: Not found handler called.")
 	w.WriteHeader(http.StatusNotFound)
 }
 
