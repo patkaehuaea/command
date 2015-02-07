@@ -6,39 +6,56 @@
 package stats
 
 import (
+    // log "github.com/cihub/seelog"
+    "errors"
     "sync"
 )
 
 const (
     START_VALUE = 0
-    CONCURRENT_REQUESTS = "concurret requests"
+    MIN_VALUE = 0
 )
+
 type ConcurrentRequests struct {
     sync.RWMutex
-    m map[string]int
+    count int
+    max int
 }
 
-func NewCR() (cr *ConcurrentRequests) {
-    cr = &ConcurrentRequests{m: make(map[string]int)}
-    cr.m[CONCURRENT_REQUESTS] = START_VALUE
+func NewCR(max int) (cr *ConcurrentRequests) {
+    cr = &ConcurrentRequests{count: START_VALUE, max: max}
     return
 }
 
-func (cr *ConcurrentRequests) Add() {
+func (cr *ConcurrentRequests) Add() (success bool, err error) {
     cr.Lock()
-    cr.m[CONCURRENT_REQUESTS] = cr.m[CONCURRENT_REQUESTS] + 1
+    if cr.count < cr.max {
+        cr.count = cr.count + 1
+        success = true
+    }
     cr.Unlock()
+    if success == false {
+        err = errors.New("stats: count >= " + string(cr.max) + " , Add() not allowed.")
+    }
+    return
 }
 
-func (cr *ConcurrentRequests) Subtract() {
+func (cr *ConcurrentRequests) Subtract() (success bool, err error) {
     cr.Lock()
-    cr.m[CONCURRENT_REQUESTS] = cr.m[CONCURRENT_REQUESTS] - 1
+    if cr.count > MIN_VALUE {
+        cr.count = cr.count - 1
+        success = true
+    }
     cr.Unlock()
+    if success == false {
+        err = errors.New("stats: count <= " + string(MIN_VALUE) + " , Subtract() not allowed.")
+    }
+    return
 }
 
-func (cr *ConcurrentRequests) Current() (current int){
+func (cr *ConcurrentRequests) Current() (current int) {
     cr.Lock()
-    current = cr.m[CONCURRENT_REQUESTS]
+    current = cr.count
     cr.Unlock()
     return
 }
