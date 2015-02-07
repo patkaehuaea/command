@@ -49,12 +49,18 @@ func NewPerson(uuid string, name string) (p *Person, err error) {
 // Uses people.NAME_REGEX to determine if name passed as
 // parameter is valid.
 func IsValidName(name string) bool {
-	match, _ := regexp.MatchString(NAME_REGEX, name)
+	match, err := regexp.MatchString(NAME_REGEX, name)
+	if err != nil {
+		log.Error(err)
+	}
 	return match
 }
 
 func IsValidUUID(value string) bool {
-    match, _ := regexp.MatchString(UUID_REGEX, value)
+    match, err := regexp.MatchString(UUID_REGEX, value)
+    if err != nil {
+    	log.Error(err)
+    }
     return match
 }
 
@@ -63,7 +69,6 @@ func IsValidUUID(value string) bool {
 func UUID() string {
 	out, err := exec.Command("/usr/bin/uuidgen").Output()
 	if err != nil {
-		// TODO: Handle error case.
 		log.Error(err)
 		return ""
 	}
