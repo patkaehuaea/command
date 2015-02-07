@@ -8,8 +8,8 @@ package main
 import (
 	log "github.com/cihub/seelog"
 	"github.com/gorilla/mux"
+	"github.com/patkaehuaea/command/authserver/people"
 	"github.com/patkaehuaea/command/config"
-	"github.com/patkaehuaea/command/timeserver/people"
 	"io"
 	"net/http"
 	"os"

@@ -11,7 +11,7 @@ package cookie
 import (
     "errors"
     log "github.com/cihub/seelog"
-    "github.com/patkaehuaea/command/timeserver/people"
+    "github.com/patkaehuaea/command/authserver/people"
     "net/http"
 )
 
