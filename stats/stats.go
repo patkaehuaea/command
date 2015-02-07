@@ -18,9 +18,10 @@ type Stats struct {
     m map[string]*Person
 }
 
-func NewStats() (s *Stats) {
+func NewStats() *Stats {
     s := {m: make(map[string]int)}
     s.m[CONCURRENT_REQUESTS] = START_VALUE
+    return &s
 }
 
 func (s *Stats) Add() {
@@ -39,4 +40,5 @@ func (s *Stats) Current() (current int){
     u.Lock()
     current = u.m[CONCURRENT_REQUESTS]
     u.Unlock()
+    return
 }
