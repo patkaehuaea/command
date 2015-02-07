@@ -3,7 +3,7 @@
 //  Proprietary and confidential
 //  Written by Pat Kaehuaea, February 2015
 
-package people
+package stats
 
 import (
     "sync"
@@ -13,30 +13,30 @@ const )
     START_VALUE = 0
     CONCURRENT_REQUESTS = "concurret requests"
 )
-type Stats struct {
+type ConcurrentRequests struct {
     sync.RWMutex
     m map[string]*Person
 }
 
-func NewStats() *Stats {
+func NewCR() *ConcurrentRequests {
     s := {m: make(map[string]int)}
     s.m[CONCURRENT_REQUESTS] = START_VALUE
     return &s
 }
 
-func (s *Stats) Add() {
+func (cr *ConcurrentRequests) Add() {
     u.Lock()
     u.m[CONCURRENT_REQUESTS] = u.m[CONCURRENT_REQUESTS]++
     u.Unlock()
 }
 
-func (s *Stats) Subtract() {
+func (cr *ConcurrentRequests) Subtract() {
     u.Lock()
     u.m[CONCURRENT_REQUESTS] = u.m[CONCURRENT_REQUESTS]--
     u.Unlock()
 }
 
-func (s *Stats) Current() (current int){
+func (cr *ConcurrentRequests) Current() (current int){
     u.Lock()
     current = u.m[CONCURRENT_REQUESTS]
     u.Unlock()
