@@ -37,8 +37,10 @@ const (
 	UTC_TIME_LAYOUT      = "15:04:05 UTC"
 )
 
-var templates *template.Template
-var authClient *auth.AuthClient
+var (
+	templates *template.Template
+	authClient *auth.AuthClient
+)
 
 func getUUIDThenName(r *http.Request) (name string, err error) {
 	log.Info("Called getUUIDThenname function.")
@@ -60,7 +62,6 @@ func getUUIDThenName(r *http.Request) (name string, err error) {
 
 func handleDefault(w http.ResponseWriter, r *http.Request) {
 	log.Info("Default handler called.")
-
 	if name, err := getUUIDThenName(r); err != nil {
 		http.Redirect(w, r, "/login", http.StatusFound)
 	} else {
@@ -84,6 +85,8 @@ func handleProcessLogin(w http.ResponseWriter, r *http.Request) {
 		if err := authClient.Set(uuid, name); err != nil {
 			log.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
+			// Wouldn't typicall print hacker friendly error
+			// messages to webpage but useful for this project.
 			renderTemplate(w, "500", err.Error())
 		} else {
 			http.SetCookie(w, cookie.NewCookie(uuid, cookie.MAX_AGE))
