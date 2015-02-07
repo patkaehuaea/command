@@ -8,6 +8,7 @@ package stats
 import (
     // log "github.com/cihub/seelog"
     "errors"
+    "fmt"
     "sync"
 )
 
@@ -27,35 +28,31 @@ func NewCR(max int) (cr *ConcurrentRequests) {
     return
 }
 
-func (cr *ConcurrentRequests) Add() (success bool, err error) {
+func (cr *ConcurrentRequests) Add() (err error) {
     cr.Lock()
     if cr.count < cr.max {
         cr.count = cr.count + 1
-        success = true
+    } else {
+        err = errors.New(fmt.Sprintf("%s %d %s", "stats: Exceded threashold of ", cr.count, " concurrent requests"))
     }
     cr.Unlock()
-    if success == false {
-        err = errors.New("stats: count >= " + string(cr.max) + " , Add() not allowed.")
-    }
-    return
-}
-
-func (cr *ConcurrentRequests) Subtract() (success bool, err error) {
-    cr.Lock()
-    if cr.count > MIN_VALUE {
-        cr.count = cr.count - 1
-        success = true
-    }
-    cr.Unlock()
-    if success == false {
-        err = errors.New("stats: count <= " + string(MIN_VALUE) + " , Subtract() not allowed.")
-    }
     return
 }
 
 func (cr *ConcurrentRequests) Current() (current int) {
     cr.Lock()
     current = cr.count
+    cr.Unlock()
+    return
+}
+
+func (cr *ConcurrentRequests) Subtract() (err error) {
+    cr.Lock()
+    if cr.count > MIN_VALUE {
+        cr.count = cr.count - 1
+    } else {
+        err = errors.New(fmt.Sprintf("%s %d", "stats: Count already at MIN_VALUE ", cr.count))
+    }
     cr.Unlock()
     return
 }
