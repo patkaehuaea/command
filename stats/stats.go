@@ -9,36 +9,36 @@ import (
     "sync"
 )
 
-const )
+const (
     START_VALUE = 0
     CONCURRENT_REQUESTS = "concurret requests"
 )
 type ConcurrentRequests struct {
     sync.RWMutex
-    m map[string]*Person
+    m map[string]int
 }
 
-func NewCR() *ConcurrentRequests {
-    s := {m: make(map[string]int)}
-    s.m[CONCURRENT_REQUESTS] = START_VALUE
-    return &s
+func NewCR() (cr *ConcurrentRequests) {
+    cr = &ConcurrentRequests{m: make(map[string]int)}
+    cr.m[CONCURRENT_REQUESTS] = START_VALUE
+    return
 }
 
 func (cr *ConcurrentRequests) Add() {
-    u.Lock()
-    u.m[CONCURRENT_REQUESTS] = u.m[CONCURRENT_REQUESTS]++
-    u.Unlock()
+    cr.Lock()
+    cr.m[CONCURRENT_REQUESTS] = cr.m[CONCURRENT_REQUESTS] + 1
+    cr.Unlock()
 }
 
 func (cr *ConcurrentRequests) Subtract() {
-    u.Lock()
-    u.m[CONCURRENT_REQUESTS] = u.m[CONCURRENT_REQUESTS]--
-    u.Unlock()
+    cr.Lock()
+    cr.m[CONCURRENT_REQUESTS] = cr.m[CONCURRENT_REQUESTS] - 1
+    cr.Unlock()
 }
 
 func (cr *ConcurrentRequests) Current() (current int){
-    u.Lock()
-    current = u.m[CONCURRENT_REQUESTS]
-    u.Unlock()
+    cr.Lock()
+    current = cr.m[CONCURRENT_REQUESTS]
+    cr.Unlock()
     return
 }
