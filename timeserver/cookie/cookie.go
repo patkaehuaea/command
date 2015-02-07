@@ -35,9 +35,8 @@ func NewCookie(value string, age int) *http.Cookie {
 func UUID(r *http.Request) (uuid string, err error) {
     log.Debug("Attempting to get uuid from " + COOKIE_NAME + " cookie.")
 
-    cookie, err := r.Cookie(COOKIE_NAME)
-    if err == http.ErrNoCookie {
-        log.Debug(COOKIE_NAME + " cookie not found in request.")
+    if cookie, err := r.Cookie(COOKIE_NAME) err != nil {
+        log.Debug(err)
     } else {
         if valid := people.IsValidUUID(cookie.Value) ; valid {
             uuid = cookie.Value
