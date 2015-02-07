@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	VERSION_NUMBER       = "v1.3.0"
+	VERSION_NUMBER       = "v2.0.0"
 	SEELOG_CONF_DIR      = "etc"
 	SEELOG_CONF_FILE     = "seelog.xml"
 	TEMPL_DIR            = "templates"
