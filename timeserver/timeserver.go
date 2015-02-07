@@ -57,13 +57,13 @@ func getUUIDThenName(r *http.Request) (name string, err error) {
 	log.Info("timeserver: Called getUUIDThenname function.")
 	uuid, uuidErr := cookie.UUID(r)
 	if uuidErr != nil {
-		log.Warn(uuidErr)
+		log.Warn(uuidErr.Error())
 		err = uuidErr
 		return
 	}
 	response, authErr := authClient.Get(uuid)
 	if authErr != nil {
-		log.Warn(authErr)
+		log.Warn(authErr.Error())
 		err = authErr
 		return
 	}
