@@ -2,7 +2,7 @@
     <outputs formatid="common">
         <filter levels="debug,info,warn,error,critical">
             <!-- Useful to output to console as well as log file.  -->
-            <file path="out/timeserver.log"/>
+            <file path="out/authserver.log"/>
             <console/>
         </filter>
     </outputs>
