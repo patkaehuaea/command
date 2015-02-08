@@ -11,7 +11,6 @@
 package people
 
 import (
-	"errors"
 	log "github.com/cihub/seelog"
 	"os/exec"
 	"regexp"
@@ -25,26 +24,6 @@ const (
 	NAME_REGEX = "^[a-zA-Z]{2,35} {0,1}[a-zA-Z]{0,35}$"
     UUID_REGEX = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
 )
-
-var (
-	ErrInvalidPerson = errors.New("person: uuid or name not valid")
-)
-type Person struct {
-	Name string
-	ID   string
-}
-
-// Initializes by setting name and calling method
-// to create ID. Failure of call to uuid method
-// will cause Person ID to be blank.
-func NewPerson(uuid string, name string) (p *Person, err error) {
-	if IsValidUUID(uuid) && IsValidName(name) {
-		p = &Person{Name: name, ID: uuid}
-	} else {
-		err = ErrInvalidPerson
-	}
-	return
-}
 
 // Uses people.NAME_REGEX to determine if name passed as
 // parameter is valid.
@@ -80,35 +59,35 @@ func UUID() string {
 
 type Users struct {
 	sync.RWMutex
-	m map[string]*Person
+	m map[string]string
 }
 
 // Returns pointer to object of Users type. Map containing
 // state is initialized and ready for use.
 func NewUsers() *Users {
-	return &Users{m: make(map[string]*Person)}
+	return &Users{m: make(map[string]string)}
 }
 
 // Adds a *Person to users map. Acquires RW lock before accessing resource.
-func (u *Users) Add(p *Person) {
+func (u *Users) Add(id string, name string) {
 	u.Lock()
-	u.m[p.ID] = p
+	u.m[id] = name
 	u.Unlock()
 }
 
 // Deletes *Person from users map whose ID is p.ID. Acquires RW lock before accessing resource.
-func (u *Users) Delete(p *Person) {
+func (u *Users) Delete(id string, name string) {
 	u.Lock()
-	delete(u.m, p.ID)
+	delete(u.m, id)
 	u.Unlock()
 }
 
 // Deletes *Person from users map whose ID is p.ID. Acquires RW lock before accessing resource.
 func (u *Users) DumpFile() {
 	u.Lock()
-	for uuid, person := range u.m {
-		log.Info("{ uuid : " + uuid + " , name: " + person.Name + " }")
-	}
+	// for uuid, person := range u.m {
+	// 	log.Info("{ uuid : " + uuid + " , name: " + person.Name + " }")
+	// }
 	u.Unlock()
 }
 
@@ -127,10 +106,7 @@ func (u *Users) Exists(id string) bool {
 // empty string.
 func (u *Users) Name(id string) (name string) {
 	u.RLock()
-	defer u.RUnlock()
-	p := u.m[id]
-	if p != nil {
-		name = p.Name
-	}
+	name = u.m[id]
+	u.RUnlock()
 	return
 }

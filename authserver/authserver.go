@@ -22,7 +22,7 @@ const (
 	SEELOG_CONF_FILE = "seelog.xml"
 )
 
-var users = people.NewUsers()
+var users *people.Users
 
 func handleGetUser(w http.ResponseWriter, r *http.Request) {
 	log.Info("authserver: Get user handler called.")
@@ -40,12 +40,14 @@ func handleGetUser(w http.ResponseWriter, r *http.Request) {
 func handleSetUser(w http.ResponseWriter, r *http.Request) {
 	log.Info("authserver: Set user handler called.")
 
-	person, err := people.NewPerson(r.FormValue("cookie"), r.FormValue("name"))
-	if err == nil {
-		users.Add(person)
+	uuid := r.FormValue("cookie")
+	name := r.FormValue("name")
+
+	if people.IsValidUUID(uuid) && people.IsValidName(name) {
+		users.Add(uuid, name)
 		w.WriteHeader(http.StatusOK)
 	} else {
-		log.Debug(err)
+		log.Debug("authserver: Invalid uuid and/or name.")
 		w.WriteHeader(http.StatusBadRequest)
 	}
 }
@@ -63,6 +65,8 @@ func main() {
 	   *config.CheckpointInt
 	   *config.DumpFile
 	*/
+
+	users = people.NewUsers()
 
 	// Server will fail to default log configuration as defined by seelog package
 	// if unable to open file. Assumes *logConf is in SEELOG_CONF_DIR relative to cwd.

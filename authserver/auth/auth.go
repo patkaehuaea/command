@@ -27,6 +27,7 @@ func NewAuthClient(host string, port string, timeoutMS int) (ac *AuthClient) {
 
 func (ac *AuthClient) Get(uuid string) (name string, err error) {
 	log.Info("auth: Get called.")
+
     params := map[string]string{"cookie": uuid}
     name , err = ac.request("get", params)
     log.Debug("auth: Get complete.")
@@ -35,6 +36,7 @@ func (ac *AuthClient) Get(uuid string) (name string, err error) {
 
 func (ac *AuthClient) Set(uuid string, name string) (err error) {
 	log.Info("auth: Set called.")
+
     params := map[string]string{"cookie": uuid, "name": name}
     _ , err = ac.request("set", params)
     log.Debug("auth: Set complete.")
