@@ -15,6 +15,7 @@ import (
 const (
     START_VALUE = 0
     MIN_VALUE = 0
+    NO_MAX_VALUE = 0
 )
 
 type ConcurrentRequests struct {
@@ -30,7 +31,9 @@ func NewCR(max int) (cr *ConcurrentRequests) {
 
 func (cr *ConcurrentRequests) Add() (err error) {
     cr.Lock()
-    if cr.count < cr.max {
+    // NO_MAX_VALUE indicates there is no upper ceiling
+    // to the number of requests that can be made.
+    if cr.count < cr.max || cr.max == NO_MAX_VALUE {
         cr.count = cr.count + 1
     } else {
         err = errors.New(fmt.Sprintf("%s %d %s", "stats: Exceded threashold of ", cr.count, " concurrent requests"))
