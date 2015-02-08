@@ -13,6 +13,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	log "github.com/cihub/seelog"
 	"github.com/gorilla/mux"
@@ -30,7 +31,7 @@ import (
 )
 
 const (
-	VERSION_NUMBER       = "v2.1.1"
+	VERSION_NUMBER       = "v2.2.1"
 	SEELOG_CONF_DIR      = "etc"
 	SEELOG_CONF_FILE     = "seelog.xml"
 	TEMPL_DIR            = "templates"
@@ -57,6 +58,7 @@ func delay(average float64, deviation float64) {
 
 func getUUIDThenName(r *http.Request) (name string, err error) {
 	log.Info("timeserver: Called getUUIDThenname function.")
+
 	uuid, uuidErr := cookie.UUID(r)
 	if uuidErr != nil {
 		log.Warn(uuidErr.Error())
@@ -69,12 +71,21 @@ func getUUIDThenName(r *http.Request) (name string, err error) {
 		err = authErr
 		return
 	}
-	name = response
+
+	// Prevents issues where cookies persists in browser but
+	// does not persist in authserver. Caller should be notified
+	// that authserver contains empty result.
+	if name = response; name == "" {
+		err = errors.New("timeserver: Empty result from get user.")
+		log.Warn(err.Error())
+	}
+
 	return
 }
 
 func handleDefault(w http.ResponseWriter, r *http.Request) {
 	log.Info("timeserver: Default handler called.")
+
 	if name, err := getUUIDThenName(r); err != nil {
 		http.Redirect(w, r, "/login", http.StatusFound)
 	} else {
@@ -90,6 +101,7 @@ func handleDisplayLogin(w http.ResponseWriter, r *http.Request) {
 
 func handleProcessLogin(w http.ResponseWriter, r *http.Request) {
 	log.Info("timeserver: Process login handler called.")
+
 	name := r.FormValue("name")
 
 	if valid := people.IsValidName(name); valid {
@@ -113,12 +125,14 @@ func handleProcessLogin(w http.ResponseWriter, r *http.Request) {
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
 	log.Info("timeserver: Logout handler called.")
+
 	http.SetCookie(w, cookie.NewCookie("deleted", cookie.DELETE_AGE))
 	renderTemplate(w, "logged-out", nil)
 }
 
 func handleNotFound(w http.ResponseWriter, r *http.Request) {
 	log.Info("timeserver: Not found handler called.")
+
 	w.WriteHeader(http.StatusNotFound)
 	renderTemplate(w, "404", nil)
 }
