@@ -23,7 +23,7 @@ func exists(file string)  (mode os.FileMode, err error) {
     return
 }
 
-func Read(file string) (users map[string]string, err error) {
+func Read(file string, users map[string]string) (err error) {
 
     var contents []byte
 
@@ -57,10 +57,15 @@ func rename(file string) (err error) {
 // Credit for advice on reflect package and DeepEqual: http://goo.gl/VqeDyZ
 func verify(file string, original map[string]string) (err error) {
     compare := make(map[string]string)
-    compare, err =  Read(file)
+    if err =  Read(file, compare) ; err != nil {
+        log.Error(err)
+        return
+    }
     if equal := reflect.DeepEqual(original, compare) ; !equal {
         err = errors.New("dumpfile: backup data not equal to original")
+        return
     }
+
     return
 }
 
