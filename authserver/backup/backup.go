@@ -3,7 +3,6 @@ package backup
 import (
     "encoding/json"
     "errors"
-    "fmt"
     "io/ioutil"
     log "github.com/cihub/seelog"
     "os"
