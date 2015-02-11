@@ -59,35 +59,38 @@ func UUID() string {
 
 type Users struct {
 	sync.RWMutex
-	m map[string]string
+	users map[string]string
 }
 
 // Returns pointer to object of Users type. Map containing
 // state is initialized and ready for use.
 func NewUsers() *Users {
-	return &Users{m: make(map[string]string)}
+	return &Users{users: make(map[string]string)}
 }
 
 // Adds a *Person to users map. Acquires RW lock before accessing resource.
 func (u *Users) Add(id string, name string) {
 	u.Lock()
-	u.m[id] = name
+	u.users[id] = name
 	u.Unlock()
+}
+
+func (u *Users) Dump(file string) {
+	copy := make(map[string]string)
+	u.Lock()
+    for uuid, name := range u.users {
+        copy[uuid] = name
+    }
+	u.Unlock()
+
+	// Call dumpfile.Write(file, copy)
+
 }
 
 // Deletes *Person from users map whose ID is p.ID. Acquires RW lock before accessing resource.
 func (u *Users) Delete(id string, name string) {
 	u.Lock()
-	delete(u.m, id)
-	u.Unlock()
-}
-
-// Deletes *Person from users map whose ID is p.ID. Acquires RW lock before accessing resource.
-func (u *Users) DumpFile() {
-	u.Lock()
-	// for uuid, person := range u.m {
-	// 	log.Info("{ uuid : " + uuid + " , name: " + person.Name + " }")
-	// }
+	delete(u.users, id)
 	u.Unlock()
 }
 
@@ -96,9 +99,14 @@ func (u *Users) DumpFile() {
 // otherise.
 func (u *Users) Exists(id string) bool {
 	u.RLock()
-	_, ok := u.m[id]
+	_, ok := u.users[id]
 	u.RUnlock()
 	return ok
+}
+
+
+func (u *Users) Load(file string) {
+
 }
 
 // Performs read lock on Users and returns
@@ -106,7 +114,9 @@ func (u *Users) Exists(id string) bool {
 // empty string.
 func (u *Users) Name(id string) (name string) {
 	u.RLock()
-	name = u.m[id]
+	name = u.users[id]
 	u.RUnlock()
 	return
 }
+
+
