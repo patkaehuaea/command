@@ -57,6 +57,24 @@ func handleNotFound(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 }
 
+func init() {
+	// DumpFile and CheckPointInt need to be specified, but
+	// dumpfile need not be present at startup. Path to
+	// dumpfile does need to be valid.
+	if *config.DumpFile == config.DUMP_FILE {
+		log.Critical("authserver: dumpfile not specified")
+		os.Exit(1)
+	}
+	if *config.CheckpointInt == config.CHECKPOINT_INT {
+		log.Critical("authserver: checkpoint interval not specified")
+		os.Exit(1)
+	}
+	// if _, err := os.Stat(*config.DumpFile) ; err != nil {
+	// 	log.Critical(err)
+	// 	os.Exit(1)
+	// }
+}
+
 func main() {
 
 	/*
@@ -66,8 +84,6 @@ func main() {
 	   *config.DumpFile
 	*/
 
-	users = people.NewUsers()
-
 	// Server will fail to default log configuration as defined by seelog package
 	// if unable to open file. Assumes *logConf is in SEELOG_CONF_DIR relative to cwd.
 	cwd, _ := os.Getwd()
@@ -76,6 +92,12 @@ func main() {
 		log.Error(err)
 	}
 	log.ReplaceLogger(logger)
+
+	users = people.NewUsers()
+	if err := users.Load(*config.DumpFile); err != nil {
+		log.Error(err)
+	}
+	go users.Persist(*config.DumpFile, *config.CheckpointInt)
 
 	r := mux.NewRouter()
 	r.HandleFunc("/get", handleGetUser).Methods("GET")

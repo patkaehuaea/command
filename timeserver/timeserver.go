@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	VERSION_NUMBER       = "v2.2.1"
+	VERSION_NUMBER       = "v2.3.0"
 	SEELOG_CONF_DIR      = "etc"
 	SEELOG_CONF_FILE     = "seelog.xml"
 	TEMPL_DIR            = "templates"
@@ -173,6 +173,7 @@ func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 
 func throttle(fn func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// TODO: skip add() if don't need to throttle...
 		if err := inFlight.Add(); err != nil {
 			log.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -232,12 +233,12 @@ func main() {
 	log.ReplaceLogger(logger)
 
 	r := mux.NewRouter()
-	r.HandleFunc("/", throttle(handleDefault))
+	r.HandleFunc("/", handleDefault)
 	r.PathPrefix("/css/").Handler(logFileRequest(http.StripPrefix("/css/", http.FileServer(http.Dir("css/")))))
-	r.HandleFunc("/index.html", throttle(handleDefault))
-	r.HandleFunc("/login", throttle(handleDisplayLogin)).Methods("GET")
-	r.HandleFunc("/login", throttle(handleProcessLogin)).Methods("POST")
-	r.HandleFunc("/logout", throttle(handleLogout))
+	r.HandleFunc("/index.html", handleDefault)
+	r.HandleFunc("/login", handleDisplayLogin).Methods("GET")
+	r.HandleFunc("/login", handleProcessLogin).Methods("POST")
+	r.HandleFunc("/logout", handleLogout)
 	r.HandleFunc("/time", throttle(handleTime))
 	r.NotFoundHandler = http.HandlerFunc(handleNotFound)
 	http.Handle("/", r)

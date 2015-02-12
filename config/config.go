@@ -9,9 +9,9 @@ const (
 	AUTH_PORT        = ":9080"
 	AUTH_TIMEOUT_MS  = 1000
 	AVG_RESP_MS      = 1000
-	CHECKPOINT_INT   = 30
+	CHECKPOINT_INT   = 0
 	DEV_MS           = 100
-	DUMP_FILE        = "users.json"
+	DUMP_FILE        = ""
 	MAX_IN_FLIGHT    = 10
 	TIME_PORT        = ":8080"
 	SEELOG_CONF_DIR  = "etc"

@@ -12,10 +12,12 @@ package people
 
 import (
 	log "github.com/cihub/seelog"
+	"github.com/patkaehuaea/command/authserver/backup"
 	"os/exec"
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 )
 
 // First name, or first and last name in English characters with intervening space.
@@ -75,7 +77,7 @@ func (u *Users) Add(id string, name string) {
 	u.Unlock()
 }
 
-func (u *Users) Dump(file string) {
+func (u *Users) Dump(file string) (err error) {
 	copy := make(map[string]string)
 	u.Lock()
     for uuid, name := range u.users {
@@ -83,8 +85,10 @@ func (u *Users) Dump(file string) {
     }
 	u.Unlock()
 
-	// Call dumpfile.Write(file, copy)
-
+	if err = backup.Write(file, copy) ; err != nil {
+		log.Error(err)
+	}
+	return
 }
 
 // Deletes *Person from users map whose ID is p.ID. Acquires RW lock before accessing resource.
@@ -105,8 +109,25 @@ func (u *Users) Exists(id string) bool {
 }
 
 
-func (u *Users) Load(file string) {
+func (u *Users) Load(file string) (err error){
+	u.Lock()
+	if err = backup.Read(file, u.users) ; err != nil {
+		log.Error(err)
+	}
+	u.Unlock()
+	return
+}
 
+func (u *Users) Persist(file string, seconds int) {
+	wait := time.Duration(seconds) * time.Second
+	for {
+		log.Trace("people: beginning persist dump")
+		if err := u.Dump(file) ; err != nil {
+			log.Error(err)
+		}
+		log.Trace("people: sleeping")
+		time.Sleep(wait)
+	}
 }
 
 // Performs read lock on Users and returns
