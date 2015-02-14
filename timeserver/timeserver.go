@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	VERSION_NUMBER       = "v2.3.0"
+	VERSION_NUMBER       = "v2.3.1"
 	SEELOG_CONF_DIR      = "etc"
 	SEELOG_CONF_FILE     = "seelog.xml"
 	TEMPL_DIR            = "templates"
@@ -47,11 +47,9 @@ var (
 )
 
 // Credit: http://goo.gl/MsxPHk
-func delay(average float64, deviation float64) {
-	avgMS := time.Duration(average) * time.Millisecond
-	devMS := time.Duration(deviation) * time.Millisecond
-	random := rand.NormFloat64()
-	load := time.Duration(random)*devMS + avgMS
+func delay(average time.Duration, deviation time.Duration) {
+	log.Trace("timeserver: delay average - " + average.String() + " ; " + "delay deviation = " + deviation.String())
+	load := time.Duration(rand.NormFloat64())*deviation + average
 	log.Debug("timeserver: Sleeping for " + load.String() + ".")
 	time.Sleep(load)
 }
@@ -141,7 +139,7 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 	log.Info("timeserver: Time handler called.")
 
 	// Simulate load with delay function.
-	delay(float64(*config.AvgRespMS), float64(*config.DeviationMS))
+	delay(*config.AvgRespMS, *config.DeviationMS)
 
 	name, _ := getUUIDThenName(r)
 	// If name is blank, template will not render
@@ -241,6 +239,7 @@ func main() {
 	r.HandleFunc("/login", handleProcessLogin).Methods("POST")
 	r.HandleFunc("/logout", handleLogout)
 	if *config.MaxInFlight != 0 {
+		log.Infof("%s - %d","timeserver: Max concurrent time connections", *config.MaxInFlight)
 		inFlight = stats.NewCR(*config.MaxInFlight)
 		r.HandleFunc("/time", throttle(handleTime))
 	}
@@ -249,5 +248,6 @@ func main() {
 	http.Handle("/", r)
 	if err := (http.ListenAndServe(*config.TimePort, nil)); err != nil {
 		log.Critical(err)
+		os.Exit(1)
 	}
 }
