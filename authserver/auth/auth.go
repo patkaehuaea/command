@@ -18,8 +18,8 @@ type AuthClient struct {
 	Client *http.Client
 }
 
-func NewAuthClient(host string, port string, timeoutMS int) (ac *AuthClient) {
-	t := time.Millisecond * time.Duration(timeoutMS)
+func NewAuthClient(host string, port string, timeoutMS time.Duration) (ac *AuthClient) {
+	t := timeoutMS
 	c := &http.Client{Timeout: t}
 	ac = &AuthClient{Host: host, Port: port, Client: c}
 	return
