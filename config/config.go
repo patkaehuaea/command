@@ -12,7 +12,7 @@ const (
 	CHECKPOINT_INT   = 0
 	DEV_MS           = 100
 	DUMP_FILE        = ""
-	MAX_IN_FLIGHT    = 10
+	MAX_IN_FLIGHT    = 0
 	TIME_PORT        = ":8080"
 	SEELOG_CONF_DIR  = "etc"
 	SEELOG_CONF_FILE = "seelog.xml"
