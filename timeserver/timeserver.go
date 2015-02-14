@@ -173,7 +173,6 @@ func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 
 func throttle(fn func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// TODO: skip add() if don't need to throttle...
 		if err := inFlight.Add(); err != nil {
 			log.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -187,6 +186,35 @@ func throttle(fn func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc 
 			}
 		}
 	}
+}
+
+func init() {
+
+	if *config.Verbose {
+		fmt.Printf("Version number: %s \n", VERSION_NUMBER)
+		os.Exit(1)
+	}
+
+	// Restrict parsing to *.templ to prevent fail on non-template files in a given directory
+	// like .DS_STORE.
+	var err error
+	templates, err = template.ParseGlob(filepath.Join(*config.TmplDir, "*"+TEMPL_FILE_EXTENSION))
+	if err != nil {
+		log.Critical(err)
+		os.Exit(1)
+	}
+
+	authClient = auth.NewAuthClient(*config.AuthHost, *config.AuthPort, *config.AuthTimeoutMS)
+
+	// Server will fail to default log configuration as defined by seelog package
+	// if unable to open file. Assumes *logConf is in SEELOG_CONF_DIR relative to cwd.
+	cwd, _ := os.Getwd()
+	logger, err := log.LoggerFromConfigAsFile(filepath.Join(cwd, SEELOG_CONF_DIR, *config.LogConf))
+	if err != nil {
+		log.Error(err)
+	}
+	log.ReplaceLogger(logger)
+
 }
 
 func main() {
@@ -205,33 +233,6 @@ func main() {
 		*config.Verbose
 	*/
 
-	if *config.Verbose {
-		fmt.Printf("Version number: %s \n", VERSION_NUMBER)
-		os.Exit(1)
-	}
-
-	// Restrict parsing to *.templ to prevent fail on non-template files in a given directory
-	// like .DS_STORE.
-	var err error
-	templates, err = template.ParseGlob(filepath.Join(*config.TmplDir, "*"+TEMPL_FILE_EXTENSION))
-	if err != nil {
-		log.Critical(err)
-		os.Exit(1)
-	}
-
-	authClient = auth.NewAuthClient(*config.AuthHost, *config.AuthPort, *config.AuthTimeoutMS)
-
-	inFlight = stats.NewCR(*config.MaxInFlight)
-
-	// Server will fail to default log configuration as defined by seelog package
-	// if unable to open file. Assumes *logConf is in SEELOG_CONF_DIR relative to cwd.
-	cwd, _ := os.Getwd()
-	logger, err := log.LoggerFromConfigAsFile(filepath.Join(cwd, SEELOG_CONF_DIR, *config.LogConf))
-	if err != nil {
-		log.Error(err)
-	}
-	log.ReplaceLogger(logger)
-
 	r := mux.NewRouter()
 	r.HandleFunc("/", handleDefault)
 	r.PathPrefix("/css/").Handler(logFileRequest(http.StripPrefix("/css/", http.FileServer(http.Dir("css/")))))
@@ -239,7 +240,11 @@ func main() {
 	r.HandleFunc("/login", handleDisplayLogin).Methods("GET")
 	r.HandleFunc("/login", handleProcessLogin).Methods("POST")
 	r.HandleFunc("/logout", handleLogout)
-	r.HandleFunc("/time", throttle(handleTime))
+	if *config.MaxInFlight != 0 {
+		inFlight = stats.NewCR(*config.MaxInFlight)
+		r.HandleFunc("/time", throttle(handleTime))
+	}
+	r.HandleFunc("/time", handleTime)
 	r.NotFoundHandler = http.HandlerFunc(handleNotFound)
 	http.Handle("/", r)
 	if err := (http.ListenAndServe(*config.TimePort, nil)); err != nil {
