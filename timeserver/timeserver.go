@@ -32,8 +32,6 @@ import (
 
 const (
 	VERSION_NUMBER       = "v2.3.1"
-	SEELOG_CONF_DIR      = "etc"
-	SEELOG_CONF_FILE     = "seelog.xml"
 	TEMPL_DIR            = "templates"
 	TEMPL_FILE_EXTENSION = ".tmpl"
 	LOCAL_TIME_LAYOUT    = "3:04:05 PM"
@@ -84,10 +82,11 @@ func handleDefault(w http.ResponseWriter, r *http.Request) {
 
 	if name, err := getUUIDThenName(r); err != nil {
 		http.Redirect(w, r, "/login", http.StatusFound)
-	} else {
-		log.Debug("timeserver: " + name + " viewing site.")
-		renderTemplate(w, "greetings", name)
+		return
 	}
+
+	log.Debug("timeserver: " + name + " viewing site.")
+	renderTemplate(w, "greetings", name)
 }
 
 func handleDisplayLogin(w http.ResponseWriter, r *http.Request) {
@@ -103,20 +102,23 @@ func handleProcessLogin(w http.ResponseWriter, r *http.Request) {
 	if valid := people.IsValidName(name); valid {
 		log.Trace("timeserver: Name matched regex.")
 		uuid := people.UUID()
+
 		if err := authClient.Set(uuid, name); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate(w, "500", nil)
 			log.Error(err)
-		} else {
-			http.SetCookie(w, cookie.NewCookie(uuid, cookie.MAX_AGE))
-			http.Redirect(w, r, "/", http.StatusFound)
-			log.Info("timeserver: " + name + " registered on site.")
+			return
 		}
-	} else {
-		w.WriteHeader(http.StatusBadRequest)
-		renderTemplate(w, "login", "C'mon, I need a name.")
-		log.Warn("timeserver: Invalid username or registration failed.")
+
+		http.SetCookie(w, cookie.NewCookie(uuid, cookie.MAX_AGE))
+		http.Redirect(w, r, "/", http.StatusFound)
+		log.Info("timeserver: " + name + " registered on site.")
+		return
 	}
+
+	w.WriteHeader(http.StatusBadRequest)
+	renderTemplate(w, "login", "C'mon, I need a name.")
+	log.Warn("timeserver: Invalid username or registration failed.")
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
@@ -169,48 +171,35 @@ func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 
 func throttle(fn func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
 		if err := inFlight.Add(); err != nil {
 			log.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate(w, "500", nil)
-		} else {
-			fn(w, r)
-			// Only subtract if stat was incremembted otherwise
-			// may attempt to subtract below stats.MIN_VALUE.
-			if err := inFlight.Subtract(); err != nil {
-				log.Error(err)
-			}
+			return
+		}
+
+		fn(w, r)
+		// Only subtract if stat was incrememted otherwise
+		// may attempt to subtract below stats.MIN_VALUE.
+		if err := inFlight.Subtract(); err != nil {
+			log.Error(err)
 		}
 	}
 }
 
 func init() {
 
-	if *config.Verbose {
-		fmt.Printf("Version number: %s \n", VERSION_NUMBER)
-		os.Exit(1)
-	}
-
 	// Restrict parsing to *.templ to prevent fail on non-template files in a given directory
 	// like .DS_STORE.
 	var err error
-	templates, err = template.ParseGlob(filepath.Join(*config.TmplDir, "*"+TEMPL_FILE_EXTENSION))
-	if err != nil {
+	if templates, err = template.ParseGlob(filepath.Join(*config.TmplDir, "*"+TEMPL_FILE_EXTENSION)); err != nil {
 		log.Critical(err)
 		os.Exit(1)
 	}
 
+	log.ReplaceLogger(config.Logger)
 	authClient = auth.NewAuthClient(*config.AuthHost, *config.AuthPort, *config.AuthTimeoutMS)
-
-	// Server will fail to default log configuration as defined by seelog package
-	// if unable to open file. Assumes *logConf is in SEELOG_CONF_DIR relative to cwd.
-	cwd, _ := os.Getwd()
-	logger, err := log.LoggerFromConfigAsFile(filepath.Join(cwd, SEELOG_CONF_DIR, *config.LogConf))
-	if err != nil {
-		log.Error(err)
-	}
-	log.ReplaceLogger(logger)
-
 }
 
 func main() {
@@ -223,11 +212,17 @@ func main() {
 		*config.AvgRespMS
 		*config.DeviationMS
 		*config.LogConf
+		config.Logger
 		*config.MaxInFlight
 		*config.TimePort
 		*config.TmplDir
 		*config.Verbose
 	*/
+
+	if *config.Verbose {
+		fmt.Printf("Version number: %s \n", VERSION_NUMBER)
+		os.Exit(0)
+	}
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", handleDefault)
