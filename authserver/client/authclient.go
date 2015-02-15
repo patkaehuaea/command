@@ -1,3 +1,12 @@
+//  Copyright (C) Pat Kaehuaea - All Rights Reserved
+//  Unauthorized copying of this file, via any medium is strictly prohibited
+//  Proprietary and confidential
+//  Written by Pat Kaehuaea, February 2015
+//
+// Package exposes AuthClient as interface to authserver. Exposes methods
+// to construct a new AuthClient as well as Get() and Set() users. Both
+// functions able to use request helper function because authserver implements
+// endpoints as GET rather than GET and POST.
 package client
 
 import (
@@ -12,12 +21,16 @@ const (
 	AUTH_SCHEME = "http"
 )
 
+// Host and port stored as strings, with
+// port expected in form ':8080'.
 type AuthClient struct {
 	host   string
 	port   string
 	client *http.Client
 }
 
+// Returns new auth client to calling function after initializing
+// new http client with timeoutMS as Timeout.
 func NewAuthClient(host string, port string, timeoutMS time.Duration) (ac *AuthClient) {
 	t := timeoutMS
 	c := &http.Client{Timeout: t}
@@ -25,6 +38,11 @@ func NewAuthClient(host string, port string, timeoutMS time.Duration) (ac *AuthC
 	return
 }
 
+// Calls private request method with "get" as parameter
+// and map of cookie to uuid. Performs no error checking
+// on UUID or name before submission. Returns name if found
+// by authserver and empty otherwise. Error associated with
+// HTTP request are returned to caller.
 func (ac *AuthClient) Get(uuid string) (name string, err error) {
 	log.Trace("auth: Get called.")
     params := map[string]string{"cookie": uuid}
@@ -33,6 +51,10 @@ func (ac *AuthClient) Get(uuid string) (name string, err error) {
     return
 }
 
+// Calls private request method with "set" as parameter
+// and map of cookie to uuid, and name to name. Performs no error
+// checking on UUID or name. Error associated with
+// HTTP request is returned to caller.
 func (ac *AuthClient) Set(uuid string, name string) (err error) {
 	log.Trace("auth: Set called.")
     params := map[string]string{"cookie": uuid, "name": name}
@@ -41,6 +63,9 @@ func (ac *AuthClient) Set(uuid string, name string) (err error) {
     return
 }
 
+// Takes the request path as an argument along with a map of parameters. Map is encoded
+// into URL then submitted via HTTP GET request to authserver. Returns the content of the
+// response as a string and error if request failed.
 func (ac *AuthClient) request(path string, params map[string]string) (contents string, err error){
 	log.Trace("auth: Request called.")
 
