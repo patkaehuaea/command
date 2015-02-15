@@ -2,6 +2,9 @@ package config
 
 import (
 	"flag"
+	"os"
+	log "github.com/cihub/seelog"
+	"path/filepath"
 	"time"
 )
 
@@ -28,11 +31,12 @@ var (
 	DeviationMS   *time.Duration
 	DumpFile      *string
 	CheckpointInt *time.Duration
-	LogConf       *string
+	logConf       *string
 	MaxInFlight   *int
 	TimePort      *string
 	TmplDir       *string
 	Verbose       *bool
+	Logger        log.LoggerInterface
 )
 
 func init() {
@@ -41,7 +45,7 @@ func init() {
 	AuthTimeoutMS = flag.Duration("authtimeout-ms", AUTH_TIMEOUT_MS, "Milliseconds to wait before terminating downstream auth request.")
 	AvgRespMS = flag.Duration("avg-response-ms", AVG_RESP_MS, "Average time to delay response to upstream time request.")
 	DeviationMS = flag.Duration("deviation-ms", DEV_MS, "Average standard deviation in response delay to upstream time request.")
-	LogConf = flag.String("log", SEELOG_CONF_FILE, "Name of log configuration file in etc directory relative to executable.")
+	logConf = flag.String("log", SEELOG_CONF_FILE, "Name of log configuration file in etc directory relative to executable.")
 	MaxInFlight = flag.Int("max-inflight", MAX_IN_FLIGHT, "Maximum number of in-flight time requests the timeserver can handle.")
 	TimePort = flag.String("port", TIME_PORT, "Time server binds to this port.")
 	TmplDir = flag.String("templates", TMPL_DIR, "Directory relative to executable where templates are stored.")
@@ -55,4 +59,12 @@ func init() {
 	AuthPort = flag.String("authport", AUTH_PORT, "Auth server binds to this port.")
 
 	flag.Parse()
+
+	// Will fail to default log configuration as defined by seelog package
+	// if unable to open file. Assumes *LogConf is in SEELOG_CONF_DIR relative to cwd.
+	cwd, _ := os.Getwd()
+	var err error
+	if Logger, err = log.LoggerFromConfigAsFile(filepath.Join(cwd, SEELOG_CONF_DIR, *logConf)) ; err != nil {
+		log.Warn(err)
+	}
 }
