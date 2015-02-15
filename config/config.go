@@ -31,7 +31,6 @@ var (
 	DeviationMS   *time.Duration
 	DumpFile      *string
 	CheckpointInt *time.Duration
-	logConf       *string
 	MaxInFlight   *int
 	TimePort      *string
 	TmplDir       *string
@@ -58,7 +57,7 @@ func init() {
 	AuthPort = flag.String("authport", AUTH_PORT, "Auth server binds to this port.")
 
 	// Local parameters:
-	logConf = flag.String("log", SEELOG_CONF_FILE, "Name of log configuration file in etc directory relative to executable.")
+	logConf := flag.String("log", SEELOG_CONF_FILE, "Name of log configuration file in etc directory relative to executable.")
 
 	flag.Parse()
 

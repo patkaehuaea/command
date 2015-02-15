@@ -6,56 +6,52 @@
 package stats
 
 import (
-    // log "github.com/cihub/seelog"
-    "errors"
-    "fmt"
-    "sync"
+	"errors"
+	"fmt"
+	"sync"
 )
 
 const (
-    START_VALUE = 0
-    MIN_VALUE = 0
-    NO_MAX_VALUE = 0
+	START_VALUE = 0
+	MIN_VALUE   = 0
 )
 
 type ConcurrentRequests struct {
-    sync.RWMutex
-    count int
-    max int
+	sync.RWMutex
+	count int
+	max   int
 }
 
 func NewCR(max int) (cr *ConcurrentRequests) {
-    cr = &ConcurrentRequests{count: START_VALUE, max: max}
-    return
+	cr = &ConcurrentRequests{count: START_VALUE, max: max}
+	return
 }
 
 func (cr *ConcurrentRequests) Add() (err error) {
-    cr.Lock()
-    // NO_MAX_VALUE indicates there is no upper ceiling
-    // to the number of requests that can be made.
-    if cr.count < cr.max || cr.max == NO_MAX_VALUE {
-        cr.count = cr.count + 1
-    } else {
-        err = errors.New(fmt.Sprintf("%s %d %s", "stats: Exceded threashold of ", cr.count, " concurrent requests"))
-    }
-    cr.Unlock()
-    return
+	cr.Lock()
+	if cr.count < cr.max {
+		cr.count = cr.count + 1
+	} else {
+		err = errors.New(fmt.Sprintf("%s %d %s", "stats: Exceded threashold of ", cr.count, " concurrent requests"))
+	}
+	cr.Unlock()
+	return
 }
 
 func (cr *ConcurrentRequests) Current() (current int) {
-    cr.Lock()
-    current = cr.count
-    cr.Unlock()
-    return
+	cr.Lock()
+	current = cr.count
+	cr.Unlock()
+	return
 }
 
 func (cr *ConcurrentRequests) Subtract() (err error) {
-    cr.Lock()
-    if cr.count > MIN_VALUE {
-        cr.count = cr.count - 1
-    } else {
-        err = errors.New(fmt.Sprintf("%s %d", "stats: Count already at MIN_VALUE ", cr.count))
-    }
-    cr.Unlock()
-    return
+	cr.Lock()
+	if cr.count > MIN_VALUE {
+		cr.count = cr.count - 1
+	} else {
+		err = errors.New(fmt.Sprintf("%s %d", "stats: Count already at MIN_VALUE ", cr.count))
+	}
+	cr.Unlock()
+	return
 }

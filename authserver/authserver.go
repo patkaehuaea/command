@@ -13,7 +13,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 )
 
 const (
@@ -22,7 +21,7 @@ const (
 	SEELOG_CONF_FILE = "seelog.xml"
 )
 
-var users *people.Users
+var users *people.UserStore
 
 func handleGetUser(w http.ResponseWriter, r *http.Request) {
 	log.Info("authserver: Get user handler called.")
@@ -58,21 +57,22 @@ func handleNotFound(w http.ResponseWriter, r *http.Request) {
 }
 
 func init() {
-	// DumpFile and CheckPointInt need to be specified, but
-	// dumpfile need not be present at startup. Path to
-	// dumpfile does need to be valid.
+
+	log.ReplaceLogger(config.Logger)
+
+	// DumpFile needs to be specified, but dumpfile need
+	// not be present at startup.
 	if *config.DumpFile == config.DUMP_FILE {
-		log.Critical("authserver: dumpfile not specified")
+		log.Critical("database: Dumpfile not specified.")
 		os.Exit(1)
 	}
-	if *config.CheckpointInt == config.CHECKPOINT_INT {
-		log.Critical("authserver: checkpoint interval not specified")
-		os.Exit(1)
+
+	users = people.NewUsers()
+
+	if err := users.Load(*config.DumpFile); err != nil {
+		log.Info("database: Backup not found at initialization.")
 	}
-	// if _, err := os.Stat(*config.DumpFile) ; err != nil {
-	// 	log.Critical(err)
-	// 	os.Exit(1)
-	// }
+	go users.Persist(*config.DumpFile, *config.CheckpointInt)
 }
 
 func main() {
@@ -80,24 +80,9 @@ func main() {
 	/*
 	   Paramters surfaced via config pacakge used in this program:
 	   *config.AuthPort
-	   *config.CheckpointInt
-	   *config.DumpFile
+	   config.Logger
+	   database.Users
 	*/
-
-	// Server will fail to default log configuration as defined by seelog package
-	// if unable to open file. Assumes *logConf is in SEELOG_CONF_DIR relative to cwd.
-	cwd, _ := os.Getwd()
-	logger, err := log.LoggerFromConfigAsFile(filepath.Join(cwd, SEELOG_CONF_DIR, *config.LogConf))
-	if err != nil {
-		log.Error(err)
-	}
-	log.ReplaceLogger(logger)
-
-	users = people.NewUsers()
-	if err := users.Load(*config.DumpFile); err != nil {
-		log.Error(err)
-	}
-	go users.Persist(*config.DumpFile, *config.CheckpointInt)
 
 	r := mux.NewRouter()
 	r.HandleFunc("/get", handleGetUser).Methods("GET")

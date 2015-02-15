@@ -24,8 +24,51 @@ import (
 // Minimum two characters and max length 71 characters including space.
 const (
 	NAME_REGEX = "^[a-zA-Z]{2,35} {0,1}[a-zA-Z]{0,35}$"
-    UUID_REGEX = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+	UUID_REGEX = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
 )
+
+type UserStore struct {
+	sync.RWMutex
+	users map[string]string
+}
+
+// Adds a *Person to users map. Acquires RW lock before accessing resource.
+func (u *UserStore) Add(id string, name string) {
+	u.Lock()
+	u.users[id] = name
+	u.Unlock()
+}
+
+func (u *UserStore) Dump(dumpFile string) (err error) {
+	copy := make(map[string]string)
+	u.Lock()
+	for uuid, name := range u.users {
+		copy[uuid] = name
+	}
+	u.Unlock()
+
+	if err = backup.Write(dumpFile, copy); err != nil {
+		log.Error(err)
+	}
+	return
+}
+
+// Deletes *Person from users map whose ID is p.ID. Acquires RW lock before accessing resource.
+func (u *UserStore) Delete(id string, name string) {
+	u.Lock()
+	delete(u.users, id)
+	u.Unlock()
+}
+
+// Performs read lock on Users. Returns true
+// if user with id exists in map. Returns false
+// otherise.
+func (u *UserStore) Exists(id string) bool {
+	u.RLock()
+	_, ok := u.users[id]
+	u.RUnlock()
+	return ok
+}
 
 // Uses people.NAME_REGEX to determine if name passed as
 // parameter is valid.
@@ -38,11 +81,45 @@ func IsValidName(name string) bool {
 }
 
 func IsValidUUID(value string) bool {
-    match, err := regexp.MatchString(UUID_REGEX, value)
-    if err != nil {
-    	log.Error(err)
-    }
-    return match
+	match, err := regexp.MatchString(UUID_REGEX, value)
+	if err != nil {
+		log.Error(err)
+	}
+	return match
+}
+
+func (u *UserStore) Load(dumpFile string) (err error) {
+	u.Lock()
+	err = backup.Read(dumpFile, u.users)
+	u.Unlock()
+	return
+}
+
+// Performs read lock on Users and returns
+// name of user with id. If not found, returns
+// empty string.
+func (u *UserStore) Name(id string) (name string) {
+	u.RLock()
+	name = u.users[id]
+	u.RUnlock()
+	return
+}
+
+// Returns pointer to object of Users type. Map containing
+// state is initialized and ready for use.
+func NewUsers() *UserStore {
+	return &UserStore{users: make(map[string]string)}
+}
+
+func (u *UserStore) Persist(dumpFile string, wait time.Duration) {
+	for {
+		log.Trace("database: Beginning persist dump.")
+		if err := u.Dump(dumpFile); err != nil {
+			log.Error(err)
+		}
+		log.Trace("database: Sleeping for " + wait.String())
+		time.Sleep(wait)
+	}
 }
 
 // For simplicity, was implimented as call to OS executable, but
@@ -58,85 +135,3 @@ func UUID() string {
 	uuid := strings.TrimSuffix(string(out), "\n")
 	return uuid
 }
-
-type Users struct {
-	sync.RWMutex
-	users map[string]string
-}
-
-// Returns pointer to object of Users type. Map containing
-// state is initialized and ready for use.
-func NewUsers() *Users {
-	return &Users{users: make(map[string]string)}
-}
-
-// Adds a *Person to users map. Acquires RW lock before accessing resource.
-func (u *Users) Add(id string, name string) {
-	u.Lock()
-	u.users[id] = name
-	u.Unlock()
-}
-
-func (u *Users) Dump(file string) (err error) {
-	copy := make(map[string]string)
-	u.Lock()
-    for uuid, name := range u.users {
-        copy[uuid] = name
-    }
-	u.Unlock()
-
-	if err = backup.Write(file, copy) ; err != nil {
-		log.Error(err)
-	}
-	return
-}
-
-// Deletes *Person from users map whose ID is p.ID. Acquires RW lock before accessing resource.
-func (u *Users) Delete(id string, name string) {
-	u.Lock()
-	delete(u.users, id)
-	u.Unlock()
-}
-
-// Performs read lock on Users. Returns true
-// if user with id exists in map. Returns false
-// otherise.
-func (u *Users) Exists(id string) bool {
-	u.RLock()
-	_, ok := u.users[id]
-	u.RUnlock()
-	return ok
-}
-
-
-func (u *Users) Load(file string) (err error){
-	u.Lock()
-	if err = backup.Read(file, u.users) ; err != nil {
-		log.Error(err)
-	}
-	u.Unlock()
-	return
-}
-
-func (u *Users) Persist(file string, wait *time.Duration) {
-	for {
-		log.Trace("people: beginning persist dump")
-		if err := u.Dump(file) ; err != nil {
-			log.Error(err)
-		}
-		log.Tracef("%s %d", "people: sleepin for")
-		time.Sleep(*wait)
-	}
-}
-
-// Performs read lock on Users and returns
-// name of user with id. If not found, returns
-// empty string.
-func (u *Users) Name(id string) (name string) {
-	u.RLock()
-	name = u.users[id]
-	u.RUnlock()
-	return
-}
-
-

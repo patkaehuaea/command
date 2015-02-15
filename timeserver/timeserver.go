@@ -17,7 +17,7 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	"github.com/gorilla/mux"
-	"github.com/patkaehuaea/command/authserver/auth"
+	"github.com/patkaehuaea/command/authserver/client"
 	"github.com/patkaehuaea/command/authserver/people"
 	"github.com/patkaehuaea/command/config"
 	"github.com/patkaehuaea/command/stats"
@@ -39,7 +39,7 @@ const (
 )
 
 var (
-	authClient *auth.AuthClient
+	authClient *client.AuthClient
 	inFlight   *stats.ConcurrentRequests
 	templates  *template.Template
 )
@@ -80,7 +80,9 @@ func getUUIDThenName(r *http.Request) (name string, err error) {
 func handleDefault(w http.ResponseWriter, r *http.Request) {
 	log.Info("timeserver: Default handler called.")
 
-	if name, err := getUUIDThenName(r); err != nil {
+	name, err := getUUIDThenName(r)
+
+	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
@@ -199,7 +201,7 @@ func init() {
 	}
 
 	log.ReplaceLogger(config.Logger)
-	authClient = auth.NewAuthClient(*config.AuthHost, *config.AuthPort, *config.AuthTimeoutMS)
+	authClient = client.NewAuthClient(*config.AuthHost, *config.AuthPort, *config.AuthTimeoutMS)
 }
 
 func main() {
