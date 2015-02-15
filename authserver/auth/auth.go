@@ -13,51 +13,49 @@ const (
 )
 
 type AuthClient struct {
-	Host   string
-	Port   string
-	Client *http.Client
+	host   string
+	port   string
+	client *http.Client
 }
 
 func NewAuthClient(host string, port string, timeoutMS time.Duration) (ac *AuthClient) {
 	t := timeoutMS
 	c := &http.Client{Timeout: t}
-	ac = &AuthClient{Host: host, Port: port, Client: c}
+	ac = &AuthClient{host: host, port: port, client: c}
 	return
 }
 
 func (ac *AuthClient) Get(uuid string) (name string, err error) {
-	log.Info("auth: Get called.")
-
+	log.Trace("auth: Get called.")
     params := map[string]string{"cookie": uuid}
     name , err = ac.request("get", params)
-    log.Debug("auth: Get complete.")
+    log.Trace("auth: Get complete.")
     return
 }
 
 func (ac *AuthClient) Set(uuid string, name string) (err error) {
-	log.Info("auth: Set called.")
-
+	log.Trace("auth: Set called.")
     params := map[string]string{"cookie": uuid, "name": name}
     _ , err = ac.request("set", params)
-    log.Debug("auth: Set complete.")
+    log.Trace("auth: Set complete.")
     return
 }
 
 func (ac *AuthClient) request(path string, params map[string]string) (contents string, err error){
-	log.Debug("auth: request called.")
+	log.Trace("auth: Request called.")
 
-    uri := url.URL{Scheme: AUTH_SCHEME, Host: ac.Host + ac.Port, Path: path}
+    var resp *http.Response
+    var body []byte
+
+    uri := url.URL{Scheme: AUTH_SCHEME, Host: ac.host + ac.port, Path: path}
     values := url.Values{}
     for k, v := range params {
         values.Add(k, v)
     }
     uri.RawQuery = values.Encode()
 
-    log.Debug("auth: URI string - " + uri.String())
-    resp, getErr := ac.Client.Get(uri.String())
-    if getErr != nil {
-    	log.Error(err)
-        err = getErr
+    log.Debug("auth: Requesting URI - " + uri.String())
+    if resp, err = ac.client.Get(uri.String()) ; err != nil {
         return
     }
 
@@ -66,13 +64,10 @@ func (ac *AuthClient) request(path string, params map[string]string) (contents s
     // is non-nil. Calling here, after error checking
     // ensures response is valid.
     defer resp.Body.Close()
-    body, readErr := ioutil.ReadAll(resp.Body)
-    if readErr != nil {
-    	log.Error(err)
-        err = readErr
+    if body, err = ioutil.ReadAll(resp.Body) ; err != nil {
         return
     }
     contents = string(body)
-    log.Debug("auth: request complete.")
+    log.Trace("auth: Request complete.")
     return
 }
