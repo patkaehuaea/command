@@ -67,8 +67,11 @@ func init() {
 		os.Exit(1)
 	}
 
+	// Initialization of the backend data store should be
+	// transparent to the authserver. Future project to move
+	// into its own pacakge's init() function and have authserver
+	// reference a public member.
 	users = people.NewUsers()
-
 	if err := users.Load(*config.DumpFile); err != nil {
 		log.Info("database: Backup not found at initialization.")
 	}
