@@ -1,7 +1,14 @@
 //  Copyright (C) Pat Kaehuaea - All Rights Reserved
 //  Unauthorized copying of this file, via any medium is strictly prohibited
 //  Proprietary and confidential
-//  Written by Pat Kaehuaea, February2015
+//  Written by Pat Kaehuaea, February 2015
+//
+// Package contains an authentication server with backend users data store.
+// The authserver reads configuration data from the config package and exposts
+// two endpoints /get and /set. The former allows a caller to fetch the name of
+// a user given a UUID, and the later allows setting a user in the data store
+// given a UUID and name. For purposes of this assignment both endpoints are
+// are implemented as HTTP GETs with data passed via query parameter.
 
 package main
 
