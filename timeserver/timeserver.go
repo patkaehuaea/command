@@ -1,15 +1,17 @@
 //  Copyright (C) Pat Kaehuaea - All Rights Reserved
 //  Unauthorized copying of this file, via any medium is strictly prohibited
 //  Proprietary and confidential
-//  Written by Pat Kaehuaea, January 2015
+//  Written by Pat Kaehuaea, February 2015
 //
-// Package contains simple web server that binds to specified --port or 8080.
-// Exectuable accepts two parameters, --port to designate listen port,
-// and -V to output the version number of the program. Additional flag --templates
-// determines location of templates on filesystem and --log parameter provides
-// name of seelog configuration file in etc/. Server provieds '/time' endpoint as
-// well as '/login' '/logout' and root pages '/', 'index.html'. State is lost
-// upon program termination.
+// Package contains simple web server that provides '/time' endpoint as
+// well as '/login', '/logout', '/', and 'index.html'. Operations to
+// find a user given a UUID, and create a user are conducted via the
+// client package that abstracts HTTP communication with authserver from
+// this program. Configuration data for btoh timeserver and authserver
+// are exposed in the config pacakge. Timeserver will only throttle
+// requests to the time endpoint and stats are only available if requests
+// are configured to throttle. The latter two features aren't derived from
+// customer use case's but from the desire to simulate load on timeserver.
 package main
 
 import (
