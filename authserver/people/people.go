@@ -118,15 +118,14 @@ func (u *Users) Load(file string) (err error){
 	return
 }
 
-func (u *Users) Persist(file string, seconds int) {
-	wait := time.Duration(seconds) * time.Second
+func (u *Users) Persist(file string, wait *time.Duration) {
 	for {
 		log.Trace("people: beginning persist dump")
 		if err := u.Dump(file) ; err != nil {
 			log.Error(err)
 		}
-		log.Trace("people: sleeping")
-		time.Sleep(wait)
+		log.Tracef("%s %d", "people: sleepin for")
+		time.Sleep(*wait)
 	}
 }
 
