@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	VERSION_NUMBER       = "v2.3.1"
+	VERSION_NUMBER       = "v2.3.2"
 	TEMPL_DIR            = "templates"
 	TEMPL_FILE_EXTENSION = ".tmpl"
 	LOCAL_TIME_LAYOUT    = "3:04:05 PM"
