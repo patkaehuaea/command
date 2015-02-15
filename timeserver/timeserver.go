@@ -99,7 +99,7 @@ func handleProcessLogin(w http.ResponseWriter, r *http.Request) {
 
 	name := r.FormValue("name")
 
-	if valid := people.IsValidName(name); valid {
+	if people.IsValidName(name) {
 		log.Trace("timeserver: Name matched regex.")
 		uuid := people.UUID()
 
