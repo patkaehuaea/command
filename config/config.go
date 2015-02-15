@@ -1,3 +1,11 @@
+//  Copyright (C) Pat Kaehuaea - All Rights Reserved
+//  Unauthorized copying of this file, via any medium is strictly prohibited
+//  Proprietary and confidential
+//  Written by Pat Kaehuaea, February 2015
+//
+// Wraps command line parsing and log initialization for timeserver and authserver.
+// Flag parameters exposed as package exports. Defaults for all flags defined in this
+// package.
 package config
 
 import (
