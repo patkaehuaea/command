@@ -1,10 +1,10 @@
-PACKAGES=github.com/patkaehuaea/command/authserver
+PACKAGES=./...
 ARTIFACT_DIRS=$(GOPATH)/bin $(GOPATH)/out $(GOPATH)/pkg
 GO_PARENT_DIR=$(HOME)
 ZIP_DEST_DIR=$(HOME)
 GODOC_PORT=:6060
 
-all: fmt install run
+all: fmt install
 
 install:
 	GOPATH=$(GOPATH) go install $(PACKAGES)
@@ -26,9 +26,6 @@ delartifacts:
         echo "Deleteing files in $$i..."; \
         GOPATH=$(GOPATH) /bin/rm -rf $$i/*; \
     done
-
-run:
-	GOPATH=$(GOPATH) $(GOPATH)/bin/authserver
 
 zip:
 	(cd $(GO_PARENT_DIR) ; /usr/bin/zip -r $(ZIP_DEST_DIR)/go.zip go)

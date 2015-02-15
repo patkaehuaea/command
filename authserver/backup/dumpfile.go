@@ -86,7 +86,7 @@ func Write(dumpFile string, users map[string]string) (err error) {
 
 	if mode, err = Exists(dumpFile); err == nil {
 		log.Trace("backup: Renaming original dumpFile.")
-		if err = os.Rename(dumpFile, backup) ; err != nil {
+		if err = os.Rename(dumpFile, backup); err != nil {
 			return
 		}
 	} else {
@@ -113,7 +113,7 @@ func Write(dumpFile string, users map[string]string) (err error) {
 	// A .bak dumpFile will not exist if the original dumpFile was not present
 	// when Write() was called. This block must use a separate error
 	// variable or function will incorrectly report an error.
-	if _, bakErr := Exists(backup) ; bakErr == nil {
+	if _, bakErr := Exists(backup); bakErr == nil {
 		err = os.Remove(backup)
 	}
 

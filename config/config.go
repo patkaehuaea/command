@@ -10,8 +10,8 @@ package config
 
 import (
 	"flag"
-	"os"
 	log "github.com/cihub/seelog"
+	"os"
 	"path/filepath"
 	"time"
 )
@@ -73,7 +73,7 @@ func init() {
 	// if unable to open file. Assumes *LogConf is in SEELOG_CONF_DIR relative to cwd.
 	cwd, _ := os.Getwd()
 	var err error
-	if Logger, err = log.LoggerFromConfigAsFile(filepath.Join(cwd, SEELOG_CONF_DIR, *logConf)) ; err != nil {
+	if Logger, err = log.LoggerFromConfigAsFile(filepath.Join(cwd, SEELOG_CONF_DIR, *logConf)); err != nil {
 		log.Warn(err)
 	}
 }
