@@ -3,11 +3,13 @@
 //  Proprietary and confidential
 //  Written by Pat Kaehuaea, January 2015
 //
-// Package contains two types, Person and Users. Intended to be used as
-// state tracking mechanism for simple server. Initialization of a
-// Users type creates a map of id -> *Person. Access to the map is
-// gated via RWMutex. Constructors exist for both Person and
-// Users structs to allow for easy initialization.
+// Package encapsulates a UserStore and acts as an in memory database. The
+// data store is implemented as a map[string]string wrapped by the UserStore
+// type. Helper methods are provided to Add(), Delete() and return Name()
+// data. Data is able to persist beyond program termination by utilizing
+// the backup package. The implementation of the "backup" is abstracted
+// from the data store by the referenced pacakge. Facilities to Dump(),
+// Load(), and Persist() the user data are provided.
 package people
 
 import (
@@ -39,6 +41,8 @@ func (u *UserStore) Add(id string, name string) {
 	u.Unlock()
 }
 
+// Copies concurrent user store to non-concurrent user store
+// and calls backup.Write() to dump.
 func (u *UserStore) Dump(dumpFile string) (err error) {
 	copy := make(map[string]string)
 	u.Lock()
@@ -80,6 +84,8 @@ func IsValidName(name string) bool {
 	return match
 }
 
+// Uses people.UUID_REGEX to determine if UUID passed
+// as parameter is valid.
 func IsValidUUID(value string) bool {
 	match, err := regexp.MatchString(UUID_REGEX, value)
 	if err != nil {
@@ -88,6 +94,8 @@ func IsValidUUID(value string) bool {
 	return match
 }
 
+// Calls backup.Read() to load dumpFile into concurrent users map.
+// Expects call on empty map.
 func (u *UserStore) Load(dumpFile string) (err error) {
 	u.Lock()
 	err = backup.Read(dumpFile, u.users)
@@ -111,6 +119,9 @@ func NewUsers() *UserStore {
 	return &UserStore{users: make(map[string]string)}
 }
 
+// Loops through Dump(), and sleep whose duration determined
+// by wait parameter. Can be called from main thread of execution
+// or as go routine.
 func (u *UserStore) Persist(dumpFile string, wait time.Duration) {
 	for {
 		log.Trace("database: Beginning persist dump.")
