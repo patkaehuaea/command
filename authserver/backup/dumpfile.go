@@ -1,3 +1,14 @@
+//  Copyright (C) Pat Kaehuaea - All Rights Reserved
+//  Unauthorized copying of this file, via any medium is strictly prohibited
+//  Proprietary and confidential
+//  Written by Pat Kaehuaea, February 2015
+//
+// Package intended to server as the interface between the in memory user's
+// data store and the file system. Implements functions to Read(), and Write()
+// a JSON encoded document to the file system along with Exists() and verify()
+// helper methods. Common parameters include a filepath/filename and a user
+// map[string]string. Read() and Write() methods are guarded by a method
+// which checks for presence of the dumpFile before contuing.
 package backup
 
 import (
@@ -14,8 +25,9 @@ const (
 	DEFAULT_MODE          = 0600
 )
 
-// Exists when err == nil, same expected use as simply
-// calling os.state, but get additional data.
+// Calls os.Stat() on dumpfile and passes file mode to
+// caller if exists. Same expectation as Stat() method
+// where err != nil indicates file not present.
 func Exists(dumpFile string) (mode os.FileMode, err error) {
 	var info os.FileInfo
 	if info, err = os.Stat(dumpFile); err != nil {
@@ -26,12 +38,16 @@ func Exists(dumpFile string) (mode os.FileMode, err error) {
 	return
 }
 
+// If dumpFile exists, read the JSON encoded documents into
+// users. Undetermined behaviour if map is not string to string.
+// Will not unmarshall into users unless file is read successfully.
 func Read(dumpFile string, users map[string]string) (err error) {
 
 	var contents []byte
 
 	if _, err = Exists(dumpFile); err != nil {
 		log.Trace("backup: Backup does not exist.")
+		return
 	}
 
 	log.Trace("backup: Reading backup dumpFile.")
@@ -40,10 +56,7 @@ func Read(dumpFile string, users map[string]string) (err error) {
 	}
 
 	log.Trace("backup: Deserializing into users.")
-	if err = json.Unmarshal(contents, &users); err != nil {
-		return
-	}
-
+	err = json.Unmarshal(contents, &users)
 	return
 }
 
@@ -61,6 +74,10 @@ func verify(dumpFile string, original map[string]string) (err error) {
 	return
 }
 
+// Expects map passed as parameter to be copy of main data store. Function
+// writes JSON encoded document to disk given user parameter. Will rename
+// existing dumpFile, but will not delete until new dumpFile can be parsed
+// and verified to contain data that is identical to users.
 func Write(dumpFile string, users map[string]string) (err error) {
 
 	var mode os.FileMode
