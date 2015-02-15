@@ -55,27 +55,25 @@ func delay(average time.Duration, deviation time.Duration) {
 }
 
 func getUUIDThenName(r *http.Request) (name string, err error) {
-	log.Info("timeserver: Called getUUIDThenname function.")
+	log.Info("timeserver: Called getUUIDThenName function.")
 
-	uuid, uuidErr := cookie.UUID(r)
-	if uuidErr != nil {
-		log.Warn(uuidErr.Error())
-		err = uuidErr
+	var uuid string
+	if uuid, err = cookie.UUID(r); err != nil {
+		log.Warn(err)
 		return
 	}
-	response, authErr := authClient.Get(uuid)
-	if authErr != nil {
-		log.Warn(authErr.Error())
-		err = authErr
+
+	if name, err = authClient.Get(uuid); err != nil {
+		log.Warn(err)
 		return
 	}
 
 	// Prevents issues where cookies persists in browser but
 	// does not persist in authserver. Caller should be notified
 	// that authserver contains empty result.
-	if name = response; name == "" {
+	if name == "" {
 		err = errors.New("timeserver: Empty result from get user.")
-		log.Warn(err.Error())
+		log.Warn(err)
 	}
 
 	return
@@ -103,21 +101,21 @@ func handleProcessLogin(w http.ResponseWriter, r *http.Request) {
 	name := r.FormValue("name")
 
 	if valid := people.IsValidName(name); valid {
-		log.Debug("timeserver: Name matched regex.")
+		log.Trace("timeserver: Name matched regex.")
 		uuid := people.UUID()
 		if err := authClient.Set(uuid, name); err != nil {
-			log.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate(w, "500", nil)
+			log.Error(err)
 		} else {
 			http.SetCookie(w, cookie.NewCookie(uuid, cookie.MAX_AGE))
 			http.Redirect(w, r, "/", http.StatusFound)
 			log.Info("timeserver: " + name + " registered on site.")
 		}
 	} else {
-		log.Debug("timeserver: Invalid username or registration failed.")
 		w.WriteHeader(http.StatusBadRequest)
 		renderTemplate(w, "login", "C'mon, I need a name.")
+		log.Warn("timeserver: Invalid username or registration failed.")
 	}
 }
 
@@ -239,7 +237,7 @@ func main() {
 	r.HandleFunc("/login", handleProcessLogin).Methods("POST")
 	r.HandleFunc("/logout", handleLogout)
 	if *config.MaxInFlight != 0 {
-		log.Infof("%s - %d","timeserver: Max concurrent time connections", *config.MaxInFlight)
+		log.Infof("%s - %d", "timeserver: Max concurrent time connections", *config.MaxInFlight)
 		inFlight = stats.NewCR(*config.MaxInFlight)
 		r.HandleFunc("/time", throttle(handleTime))
 	}
