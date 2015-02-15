@@ -22,8 +22,6 @@ const (
     DELETE_AGE  = -1
 )
 
-var ErrNoUUID = errors.New("cookie: value not valid uuid")
-
 // Returns address of new cookie with 'uuid' name, value set to value
 // path to '/' and age set accordingly. Should utilize MAX_AGE when
 // creating, and DELETE_AGE when intending to delete cookie with overwright.
@@ -33,18 +31,18 @@ func NewCookie(value string, age int) *http.Cookie {
 }
 
 func UUID(r *http.Request) (uuid string, err error) {
-    log.Info("cookie: getting uuid from " + COOKIE_NAME + " cookie.")
+    log.Trace("cookie: getting uuid from " + COOKIE_NAME + " cookie.")
 
-    if cookie, cookieErr := r.Cookie(COOKIE_NAME) ; cookieErr != nil {
-        err = cookieErr
-        log.Debug(err)
-    } else {
-        if valid := people.IsValidUUID(cookie.Value) ; valid {
-            uuid = cookie.Value
-        } else {
-            err = ErrNoUUID
-            log.Debug(err)
-        }
+    var cookie *http.Cookie
+    if cookie, err = r.Cookie(COOKIE_NAME) ; err != nil {
+        return
     }
-    return uuid, err
+
+    if people.IsValidUUID(cookie.Value) {
+        uuid = cookie.Value
+        return
+    }
+
+    err = errors.New("cookie: value not valid uuid")
+    return
 }
