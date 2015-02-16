@@ -28,6 +28,6 @@ delartifacts:
     done
 
 zip:
-	(cd $(GO_PARENT_DIR) ; /usr/bin/zip -r $(ZIP_DEST_DIR)/go.zip go)
+	(cd $(GO_PARENT_DIR) ; /usr/bin/zip -x *.git* -r $(ZIP_DEST_DIR)/go.zip go)
 
 release: clean delartifacts zip
