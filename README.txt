@@ -11,6 +11,7 @@ specification: http://goo.gl/ZmC2YD. Please review spec for list of supported fe
 
 [UNPACK]
 
+
 Unzip go.zip and replace the go folder in your $GOPATH.
 If $GOPATH == ~/go then:
 
