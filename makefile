@@ -1,5 +1,5 @@
 PACKAGES=./...
-ARTIFACT_DIRS=$(GOPATH)/bin $(GOPATH)/out $(GOPATH)/pkg
+ARTIFACT_DIRS=$(GOPATH)/bin $(GOPATH)/out $(GOPATH)/pkg $(GOPATH)/src/github.com/patkaehuaea/command/*/out/
 GO_PARENT_DIR=$(HOME)
 ZIP_DEST_DIR=$(HOME)
 GODOC_PORT=:6060

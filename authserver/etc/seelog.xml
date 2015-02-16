@@ -1,6 +1,6 @@
 <seelog>
     <outputs formatid="common">
-        <filter levels="trace, debug,info,warn,error,critical">
+        <filter levels="info,warn,error,critical">
             <!-- Useful to output to console as well as log file.  -->
             <file path="out/authserver.log"/>
             <console/>
