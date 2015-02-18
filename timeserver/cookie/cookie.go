@@ -20,6 +20,7 @@ const (
 	COOKIE_PATH = "/"
 	MAX_AGE     = 86400
 	DELETE_AGE  = -1
+	DELETE_VALUE = "deleted"
 )
 
 // Returns address of new cookie with 'uuid' name, value set to value
