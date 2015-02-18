@@ -85,6 +85,7 @@ func handleDefault(w http.ResponseWriter, r *http.Request) {
 	name, err := getUUIDThenName(r)
 
 	if err != nil {
+		http.SetCookie(w, cookie.NewCookie(cookie.DELETE_VALUE, cookie.DELETE_AGE))
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
@@ -108,6 +109,7 @@ func handleProcessLogin(w http.ResponseWriter, r *http.Request) {
 		uuid := people.UUID()
 
 		if err := authClient.Set(uuid, name); err != nil {
+			http.SetCookie(w, cookie.NewCookie(cookie.DELETE_VALUE, cookie.DELETE_AGE))
 			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate(w, "500", nil)
 			log.Error(err)
@@ -128,7 +130,7 @@ func handleProcessLogin(w http.ResponseWriter, r *http.Request) {
 func handleLogout(w http.ResponseWriter, r *http.Request) {
 	log.Info("timeserver: Logout handler called.")
 
-	http.SetCookie(w, cookie.NewCookie("deleted", cookie.DELETE_AGE))
+	http.SetCookie(w, cookie.NewCookie(cookie.DELETE_VALUE, cookie.DELETE_AGE))
 	renderTemplate(w, "logged-out", nil)
 }
 
@@ -145,7 +147,12 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 	// Simulate load with delay function.
 	delay(*config.AvgRespMS, *config.DeviationMS)
 
-	name, _ := getUUIDThenName(r)
+	name, err := getUUIDThenName(r)
+
+	if err != nil {
+		http.SetCookie(w, cookie.NewCookie(cookie.DELETE_VALUE, cookie.DELETE_AGE))
+	}
+
 	// If name is blank, template will not render
 	// personalized greeting.
 	params := map[string]interface{}{
