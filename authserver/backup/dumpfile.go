@@ -41,7 +41,7 @@ func Exists(dumpFile string) (mode os.FileMode, err error) {
 // If dumpFile exists, read the JSON encoded documents into
 // users. Undetermined behaviour if map is not string to string.
 // Will not unmarshall into users unless file is read successfully.
-func Read(dumpFile string, users map[string]string) (err error) {
+func Read(dumpFile string, target map[string]string) (err error) {
 
 	var contents []byte
 
@@ -55,8 +55,8 @@ func Read(dumpFile string, users map[string]string) (err error) {
 		return
 	}
 
-	log.Trace("backup: Deserializing into users.")
-	err = json.Unmarshal(contents, &users)
+	log.Trace("backup: Deserializing into target map.")
+	err = json.Unmarshal(contents, &target)
 	return
 }
 
@@ -78,7 +78,7 @@ func verify(dumpFile string, original map[string]string) (err error) {
 // writes JSON encoded document to disk given user parameter. Will rename
 // existing dumpFile, but will not delete until new dumpFile can be parsed
 // and verified to contain data that is identical to users.
-func Write(dumpFile string, users map[string]string) (err error) {
+func Write(dumpFile string, userCopy map[string]string) (err error) {
 
 	var mode os.FileMode
 	var data []byte
@@ -95,8 +95,8 @@ func Write(dumpFile string, users map[string]string) (err error) {
 		mode = DEFAULT_MODE
 	}
 
-	log.Trace("backup: Serializing users map.")
-	if data, err = json.Marshal(&users); err != nil {
+	log.Trace("backup: Serializing duplicate user's map.")
+	if data, err = json.Marshal(&userCopy); err != nil {
 		return
 	}
 
@@ -106,7 +106,7 @@ func Write(dumpFile string, users map[string]string) (err error) {
 	}
 
 	log.Trace("backup: Verifying dumpFile.")
-	if err = verify(dumpFile, users); err != nil {
+	if err = verify(dumpFile, userCopy); err != nil {
 		return
 	}
 
