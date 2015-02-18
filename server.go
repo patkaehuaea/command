@@ -68,7 +68,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	info("Login handler called.", r)
 	if r.Method == "GET" {
 		log.Debug("Login GET method detected.")
-		renderTemplate(w, "login", nil)
+		renderTemplate(w, "login", "What is your name, Earthling?")
 	} else if r.Method == "POST" {
 		log.Debug("Login POST method detected.")
 		name := r.FormValue("name")
