@@ -1,0 +1,9 @@
+<html>
+{{template "head"}}
+<body>
+	{{template "logo"}}
+	{{template "menu"}}
+	<p>The time is now <span class="time">{{.localTime}} ({{.UTCTime}})</span>{{if .name}}, {{.name}}.{{else}}.{{end}}</p>
+	{{template "menu"}}
+</body>
+</html>

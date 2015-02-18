@@ -1,9 +1,9 @@
 Instructions for running server:
 
 $ cd $GOPATH/src/github.com/patkaehuaea/server
-$ go build
 $ go install
 $ $GOPATH/bin/server
+
 
 Alternatively:
 
@@ -11,14 +11,27 @@ $ cd $GOPATH/src/github.com/patkaehuaea/server
 $ make install
 $ $GOPATH/bin/server
 
+
 To view the version number:
 
 $ $GOPATH/bin/server -V
 Version number: v1.0.7
 
+
 To change default listen port:
 
 $ server -port="9001"
+
+
+To change the templates directory:
+
+$ server --templates /path/to/
+
+
+To change the name of configuration file:
+
+ server --log foo.xml
+
 
 To view main page:
 

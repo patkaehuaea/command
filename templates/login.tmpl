@@ -1,0 +1,13 @@
+<html>
+{{template "head"}}
+<body>
+	{{template "logo"}}
+	{{template "menu"}}
+	<form name="earthling_login" action="login" method="post">
+		{{.}}
+		<input type="text" name="name" size="50">
+		<input type="submit">
+	</form>
+	{{template "menu"}}
+</body>
+</html>
