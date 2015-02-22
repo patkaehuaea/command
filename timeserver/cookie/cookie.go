@@ -16,10 +16,10 @@ import (
 )
 
 const (
-	COOKIE_NAME = "uuid"
-	COOKIE_PATH = "/"
-	MAX_AGE     = 86400
-	DELETE_AGE  = -1
+	COOKIE_NAME  = "uuid"
+	COOKIE_PATH  = "/"
+	MAX_AGE      = 86400
+	DELETE_AGE   = -1
 	DELETE_VALUE = "deleted"
 )
 

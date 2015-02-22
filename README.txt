@@ -1,4 +1,3 @@
-
 [GENERAL]
 
 Both authserver and timeserver can be launched using the start.sh script
@@ -7,6 +6,28 @@ Defaults for both applications are defined in `$GOPATH/src/github.com/patkaehuae
 Timeserver will run on defaults with no parameters passed, but authserver must receive the --dumpfile flag
 or execution will halt. The functionality implemented by each server is described in the assignment-04
 specification: http://goo.gl/ZmC2YD. Please review spec for list of supported features.
+
+
+[CAVEATS]
+
+1. The following timeserver flags have been implemented as time.Duration:
+
+--authtimeout-ms
+--avg-response-ms
+--deviation-ms
+
+Example usage (from timeserver directory):
+
+$ $GOPATH/bin/timeserver --authtimeout-ms 1500ms --avg-response-ms 1000ms --deviation-ms 500ms
+
+
+2. The following authserver flags have been implemented as time.Duration:
+
+--checkpoint-interval
+
+Example usage (from authserver directory):
+
+$ $GOPATH/bin/authserver --dumpfile ~/users.json --checkpoint-interval 60s
 
 
 [UNPACK]
