@@ -17,33 +17,57 @@ import (
 )
 
 const (
-	AUTH_HOST        = "localhost"
-	AUTH_PORT        = ":9080"
-	AUTH_TIMEOUT_MS  = 1000 * time.Millisecond
-	AVG_RESP_MS      = 1000 * time.Millisecond
-	CHECKPOINT_INT   = 60 * time.Second
-	DEV_MS           = 100 * time.Millisecond
-	DUMP_FILE        = ""
-	MAX_IN_FLIGHT    = 0
-	TIME_PORT        = ":8080"
+	// Constants for timeserver:
+	AUTH_HOST       = "localhost"
+	AUTH_PORT       = ":9080"
+	AUTH_TIMEOUT_MS = 1000 * time.Millisecond
+	AVG_RESP_MS     = 1000 * time.Millisecond
+	DEV_MS          = 100 * time.Millisecond
+	MAX_IN_FLIGHT   = 0
+	TIME_PORT       = ":8080"
+	TMPL_DIR        = "templates"
+
+	// Constants for authserver:
+	DUMP_FILE      = ""
+	CHECKPOINT_INT = 60 * time.Second
+
+	// Constants for loadgen:
+	LOAD_RATE       = 10
+	LOAD_BURST      = 10
+	LOAD_TIMEOUT_MS = 1500 * time.Millisecond
+	LOAD_RUNTIME    = 10 * time.Second
+	LOAD_URL        = "http://localhost:8080/time"
+
+	// Constants shared accross applications:
 	SEELOG_CONF_DIR  = "etc"
 	SEELOG_CONF_FILE = "seelog.xml"
-	TMPL_DIR         = "templates"
 )
 
 var (
+	// Variables for timserver:
 	AuthHost      *string
 	AuthPort      *string
 	AuthTimeoutMS *time.Duration
 	AvgRespMS     *time.Duration
 	DeviationMS   *time.Duration
+	MaxInFlight   *int
+
+	// Variables for authserver:
 	DumpFile      *string
 	CheckpointInt *time.Duration
-	MaxInFlight   *int
-	TimePort      *string
-	TmplDir       *string
-	Verbose       *bool
-	Logger        log.LoggerInterface
+
+	// Variables for loadgen:
+	Rate          *int
+	Burst         *int
+	LoadTimeoutMS *time.Duration
+	Runtime       *time.Duration
+	URL           *string
+
+	// Variables shared across applications:
+	TimePort *string
+	TmplDir  *string
+	Verbose  *bool
+	Logger   log.LoggerInterface
 )
 
 func init() {
@@ -60,6 +84,13 @@ func init() {
 	// Parameters for authserver:
 	DumpFile = flag.String("dumpfile", DUMP_FILE, "Name of file storing state as JSON document.")
 	CheckpointInt = flag.Duration("checkpoint-interval", CHECKPOINT_INT, "Dump state to file every checkpoint-interval seconds.")
+
+	// Parameters for loadgen:
+	Rate = flag.Int("rate", LOAD_RATE, "Average rate of requests (per second).")
+	Burst = flag.Int("burst", LOAD_BURST, "Number of concurrent requests to issue.")
+	LoadTimeoutMS = flag.Duration("timeout-ms", LOAD_TIMEOUT_MS, "Max time to wait for response.")
+	Runtime = flag.Duration("runtime", LOAD_RUNTIME, "Number of seconds to process.")
+	URL = flag.String("url", LOAD_URL, "URL to sample.")
 
 	// Shared parameters:
 	AuthPort = flag.String("authport", AUTH_PORT, "Auth server binds to this port.")
