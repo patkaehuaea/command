@@ -63,10 +63,10 @@ func (s *Statistics) Copy() (copy map[string]int) {
 }
 
 func (s *Statistics) Error() {
-    s.Lock()
-    s.counters[TOTAL_KEY] = s.counters[TOTAL_KEY] + 1
-    s.counters[ERROR_KEY] = s.counters[ERROR_KEY] + 1
-    s.Unlock()
+	s.Lock()
+	s.counters[TOTAL_KEY] = s.counters[TOTAL_KEY] + 1
+	s.counters[ERROR_KEY] = s.counters[ERROR_KEY] + 1
+	s.Unlock()
 }
 
 func (s *Statistics) Increment(httpStatusCode int) (err error) {
