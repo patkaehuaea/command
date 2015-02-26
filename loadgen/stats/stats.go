@@ -60,7 +60,6 @@ func (s *Statistics) Reset(statistic string) {
 	s.Lock()
 	s.counters[statistic] = START_VALUE
 	s.Unlock()
-
 }
 
 func (s *Statistics) String() (output string) {

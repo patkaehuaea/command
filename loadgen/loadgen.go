@@ -9,9 +9,12 @@ import (
 	"time"
 )
 
+const KEY_LOOKUP_DIVISOR = 100
+
 var (
 	statistics *stats.Statistics
-	burst_interval   <-chan time.Time
+	period     <-chan time.Time
+	stop       <-chan time.Time
 	client     *http.Client
 	convert    = map[int]string{
 		1: "100s",
@@ -22,30 +25,27 @@ var (
 	}
 )
 
-func key(httpStatusCode int) (key string) {
-	return convert[httpStatusCode/100]
+func key(httpStatusCode int) string {
+	key, ok := convert[httpStatusCode/KEY_LOOKUP_DIVISOR]
+	if !ok {
+		key = stats.ERROR_KEY
+	}
+	return key
 }
 
 func load(url string, burst int) {
-	//timeout := time.Tick(time.Duration(2) * *config.Runtime)
 	for {
 		for i := 0; i < burst; i++ {
 			go request(url)
 		}
-		<-burst_interval
+		<-period
 
-		// Poll for timeout
-		// select {
-		// 	case <- burst_interval:
-		// 	case <- timeout:
-		// 		return
-		// 	default:
-		// }
+		select {
+		case <-stop:
+			return
+		default:
+		}
 	}
-}
-
-func interval(burst int, rate int) time.Duration {
-	return time.Duration(burst*1000000/rate) * time.Microsecond
 }
 
 func request(url string) (err error) {
@@ -58,28 +58,12 @@ func request(url string) (err error) {
 	defer response.Body.Close()
 	statistics.Increment(key(response.StatusCode), 1)
 	return
-
-	/*
-		c.Incr("total")
-
-		if err != nil {
-			c.Incr("errors", 1)
-			return
-		}
-
-		key, ok := convert[response.StatusCode / 100]
-		if !ok {
-			key = "errors"
-		}
-
-		c.Incr(key, 1)
-	*/
-
 }
 
 func init() {
 	statistics = stats.New()
-	burst_interval = time.Tick(interval(*config.Burst, *config.Rate))
+	period = time.Tick(time.Duration((*config.Burst*1000000) / *config.Rate) * time.Microsecond)
+	stop = time.Tick(*config.Runtime + *config.LoadTimeoutMS)
 	client = &http.Client{Timeout: *config.LoadTimeoutMS}
 }
 
@@ -93,11 +77,7 @@ func main() {
 	   --url: URL to sample
 	*/
 
-	// If waiting -> load is no longer a go routine.
-	go load(*config.URL, *config.Burst)
-	// Adjust sleep so you wait long enough based on
-	// requests in flight.
-	time.Sleep(*config.Runtime)
+	load(*config.URL, *config.Burst)
 	fmt.Println(statistics.String())
 	os.Exit(0)
 
