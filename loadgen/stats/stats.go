@@ -6,24 +6,19 @@
 package stats
 
 import (
-	"errors"
-	"regexp"
 	"strconv"
 	"sync"
 )
 
 const (
 	TOTAL_KEY   = "Total"
-	KEY_100     = "100"
-	KEY_200     = "200"
-	KEY_300     = "300"
-	KEY_400     = "400"
-	KEY_500     = "500"
+	KEY_100     = "100s"
+	KEY_200     = "200s"
+	KEY_300     = "300s"
+	KEY_400     = "400s"
+	KEY_500     = "500s"
 	ERROR_KEY   = "Errors"
 	START_VALUE = 0
-	// Matches 100 through 599 so not exact, but
-	// better than nothing.
-	HTTP_STATUS_CODE_REGEX = "^[1-5][0-9][0-9]$"
 )
 
 type Statistics struct {
@@ -43,15 +38,6 @@ func NewCounters() (s *Statistics) {
 	return
 }
 
-// Converts string adhering to HTTP_STATUS_CODE_REGEX to
-// one of the allowed key constants defined in the package.
-// Behavior undefined if receives non-compliant string.
-func convertToKey(httpStatusCode string) (code string) {
-	code = string(httpStatusCode[0])
-	code = code + "00"
-	return
-}
-
 func (s *Statistics) Copy() (copy map[string]int) {
 	copy = make(map[string]int)
 	s.RLock()
@@ -62,57 +48,30 @@ func (s *Statistics) Copy() (copy map[string]int) {
 	return
 }
 
-func (s *Statistics) Error() {
+// Expect one.
+func (s *Statistics) Increment(statistic string, delta int) (err error) {
 	s.Lock()
-	s.counters[TOTAL_KEY] = s.counters[TOTAL_KEY] + 1
-	s.counters[ERROR_KEY] = s.counters[ERROR_KEY] + 1
+	s.counters[TOTAL_KEY] = s.counters[TOTAL_KEY] + delta
+	s.counters[statistic] = s.counters[statistic] + delta
 	s.Unlock()
-}
-
-func (s *Statistics) Increment(httpStatusCode int) (err error) {
-	code := strconv.Itoa(httpStatusCode)
-
-	if match := isValidStatus(code); match {
-
-		if code = convertToKey(code); err != nil {
-			return
-		}
-
-		s.Lock()
-		s.counters[TOTAL_KEY] = s.counters[TOTAL_KEY] + 1
-		s.counters[code] = s.counters[code] + 1
-		s.Unlock()
-	}
 	return
 }
 
-// Uses stats.HTTP_STATUS_CODE_REGEX to determine if int passed as
-// parameter is valid.
-func isValidStatus(httpStatusCode string) (match bool) {
-	match, _ = regexp.MatchString(HTTP_STATUS_CODE_REGEX, httpStatusCode)
-	return
-}
+func (s *Statistics) Reset(statistic string) {
+	s.Lock()
+	s.counters[statistic] = START_VALUE
+	s.Unlock()
 
-func (s *Statistics) Reset(httpStatusCode int) (err error) {
-	code := strconv.Itoa(httpStatusCode)
-	if match := isValidStatus(code); match {
-		s.Lock()
-		s.counters[code] = START_VALUE
-		s.Unlock()
-	}
-
-	err = errors.New("stats: Unable to reset " + code + " to 0.")
-	return
 }
 
 func (s *Statistics) String() (output string) {
 	copy := s.Copy()
-	output = "Total:  " + strconv.Itoa(s.counters[TOTAL_KEY]) + "\n"
-	output = output + "100s:   " + strconv.Itoa(copy[KEY_100]) + "\n"
-	output = output + "200s:   " + strconv.Itoa(copy[KEY_200]) + "\n"
-	output = output + "300s:   " + strconv.Itoa(copy[KEY_300]) + "\n"
-	output = output + "400s:   " + strconv.Itoa(copy[KEY_400]) + "\n"
-	output = output + "500s:   " + strconv.Itoa(copy[KEY_500]) + "\n"
-	output = output + "Errors: " + strconv.Itoa(copy[ERROR_KEY]) + "\n"
+	output = TOTAL_KEY + ":\t" + strconv.Itoa(copy[TOTAL_KEY]) + "\n"
+	output = output + KEY_100 + ":\t" + strconv.Itoa(copy[KEY_100]) + "\n"
+	output = output + KEY_200 + ":\t" + strconv.Itoa(copy[KEY_200]) + "\n"
+	output = output + KEY_300 + ":\t" + strconv.Itoa(copy[KEY_300]) + "\n"
+	output = output + KEY_400 + ":\t" + strconv.Itoa(copy[KEY_400]) + "\n"
+	output = output + KEY_500 + ":\t" + strconv.Itoa(copy[KEY_500]) + "\n"
+	output = output + ERROR_KEY + ":\t" + strconv.Itoa(copy[ERROR_KEY]) + "\n"
 	return
 }
