@@ -11,7 +11,7 @@ import (
 
 var (
 	statistics *stats.Statistics
-	interval   <-chan time.Time
+	burst_interval   <-chan time.Time
 	client     *http.Client
 	convert    = map[int]string{
 		1: "100s",
@@ -32,11 +32,11 @@ func load(url string, burst int) {
 		for i := 0; i < burst; i++ {
 			go request(url)
 		}
-		<-interval
+		<-burst_interval
 
 		// Poll for timeout
 		// select {
-		// 	case <- interval:
+		// 	case <- burst_interval:
 		// 	case <- timeout:
 		// 		return
 		// 	default:
@@ -44,7 +44,7 @@ func load(url string, burst int) {
 	}
 }
 
-func period(burst int, rate int) time.Duration {
+func interval(burst int, rate int) time.Duration {
 	return time.Duration(burst*1000000/rate) * time.Microsecond
 }
 
@@ -78,8 +78,8 @@ func request(url string) (err error) {
 }
 
 func init() {
-	statistics = stats.NewCounters()
-	interval = time.Tick(period(*config.Burst, *config.Rate))
+	statistics = stats.New()
+	burst_interval = time.Tick(interval(*config.Burst, *config.Rate))
 	client = &http.Client{Timeout: *config.LoadTimeoutMS}
 }
 

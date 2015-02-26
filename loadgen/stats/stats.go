@@ -26,7 +26,7 @@ type Statistics struct {
 	counters map[string]int
 }
 
-func NewCounters() (s *Statistics) {
+func New() (s *Statistics) {
 	s = &Statistics{counters: make(map[string]int)}
 	s.counters[TOTAL_KEY] = START_VALUE
 	s.counters[KEY_100] = START_VALUE
@@ -48,7 +48,6 @@ func (s *Statistics) Copy() (copy map[string]int) {
 	return
 }
 
-// Expect one.
 func (s *Statistics) Increment(statistic string, delta int) (err error) {
 	s.Lock()
 	s.counters[TOTAL_KEY] = s.counters[TOTAL_KEY] + delta
