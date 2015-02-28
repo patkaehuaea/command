@@ -6,7 +6,12 @@ or calling each executable directly. Launching with user defined parameters requ
 Defaults for both applications are defined in `$GOPATH/src/github.com/patkaehuaea/command/config/config.go`.
 Timeserver will run on defaults with no parameters passed, but authserver must receive the --dumpfile flag
 or execution will halt. The functionality implemented by each server is described in the assignment-04
-specification: http://goo.gl/ZmC2YD. Please review spec for list of supported features.
+specification: http://goo.gl/ZmC2YD.
+
+The load generator described in assignment-05 is also included in this repository with functionality described
+in: http://goo.gl/dlg5ml.
+
+Please review the provided specification link for detailed list of supported features.
 
 
 [UNPACK]
@@ -32,6 +37,13 @@ Run both servers with defaults defined in config.go:
 
 $ chmod u+x start.sh
 $ ./start.sh
+
+
+Launch a load test:
+
+$ cd $GOPATH/src/github.com/patkaehuaea/command/
+$ $GOPATH/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=200 --burst=20 --timeout-ms=1000ms
+
 
 
 Stop both servers:
@@ -61,3 +73,10 @@ Instructions for running timeserver:
 $ cd $GOPATH/src/github.com/patkaehuaea/command/timeserver
 $ go install
 $ $GOPATH/bin/timeserver
+
+
+Instructions for running loadgen:
+
+$ cd $GOPATH/src/github.com/patkaehuaea/command/loadgen
+$ go install
+$ $GOPATH/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=200 --burst=20 --timeout-ms=1000ms

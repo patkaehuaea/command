@@ -2,6 +2,14 @@
 //  Unauthorized copying of this file, via any medium is strictly prohibited
 //  Proprietary and confidential
 //  Written by Pat Kaehuaea, February 2015
+//
+// Provides counters via map of string to int. Keys are defined
+// and initialized to start value. All defined methods are protected
+// via mutex and are thread safe. There is no error checking performed
+// in methods that take statistic parameter as string. It is expected
+// that callers will use existing counters. It is highly recommended
+// to pass a status code to the Key() method when calling methods with
+// statistic parameters.
 
 package stats
 
@@ -11,21 +19,46 @@ import (
 )
 
 const (
-	TOTAL_KEY   = "Total"
-	KEY_100     = "100s"
-	KEY_200     = "200s"
-	KEY_300     = "300s"
-	KEY_400     = "400s"
-	KEY_500     = "500s"
-	ERROR_KEY   = "Errors"
-	START_VALUE = 0
+	TOTAL_KEY          = "Total"
+	KEY_100            = "100s"
+	KEY_200            = "200s"
+	KEY_300            = "300s"
+	KEY_400            = "400s"
+	KEY_500            = "500s"
+	ERROR_KEY          = "Errors"
+	START_VALUE        = 0
+	KEY_LOOKUP_DIVISOR = 100
 )
+
+var convert = map[int]string{
+	1: "100s",
+	2: "200s",
+	3: "300s",
+	4: "400s",
+	5: "500s",
+}
 
 type Counter struct {
 	sync.RWMutex
 	counters map[string]int
 }
 
+// Converts an http status code to a string
+// for accessing the right counter in the
+// counters map. Returns stats.ERROR_KEY if
+// status code invalid or key not found in map.
+func Key(httpStatusCode int) string {
+	key, ok := convert[httpStatusCode/KEY_LOOKUP_DIVISOR]
+	if !ok {
+		key = ERROR_KEY
+	}
+	return key
+}
+
+// Return pointer to Counter struct whose map is
+// initialized with all keys defined as consts
+// in stats package. Value of each key set to
+// START_VALUE.
 func New() (c *Counter) {
 	c = &Counter{counters: make(map[string]int)}
 	c.counters[TOTAL_KEY] = START_VALUE
@@ -38,6 +71,8 @@ func New() (c *Counter) {
 	return
 }
 
+// Returns copy of counters map with values identical
+// to original when method was called.
 func (c *Counter) Copy() (copy map[string]int) {
 	copy = make(map[string]int)
 	c.RLock()
@@ -48,6 +83,9 @@ func (c *Counter) Copy() (copy map[string]int) {
 	return
 }
 
+// Gets value of statistic. Fetching statistic not in map
+// will yield result of zero. Callers should use
+// stats.Key function if unsure if which statistics are present.
 func (c *Counter) Get(statistic string) (count int) {
 	c.RLock()
 	count = c.counters[statistic]
@@ -55,6 +93,9 @@ func (c *Counter) Get(statistic string) (count int) {
 	return
 }
 
+// Increments statistic by delta, and stats.TOTAL_KEY by same amount.
+// Callers should use stats.Key function if unsure of which statistics
+// are present.
 func (c *Counter) Increment(statistic string, delta int) {
 	c.Lock()
 	c.counters[TOTAL_KEY] = c.counters[TOTAL_KEY] + delta
@@ -62,12 +103,15 @@ func (c *Counter) Increment(statistic string, delta int) {
 	c.Unlock()
 }
 
+// Sets statistic to stats.START_VALUE. Callers should use
+// stats.Key function if unsure if which statistics are present.
 func (c *Counter) Reset(statistic string) {
 	c.Lock()
 	c.counters[statistic] = START_VALUE
 	c.Unlock()
 }
 
+// Prints counters to screen.
 func (c *Counter) Print() (output string) {
 	copy := c.Copy()
 	fmt.Printf("%s:\t %d\n", TOTAL_KEY, copy[TOTAL_KEY])

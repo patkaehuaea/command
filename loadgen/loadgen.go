@@ -1,3 +1,13 @@
+//  Copyright (C) Pat Kaehuaea - All Rights Reserved
+//  Unauthorized copying of this file, via any medium is strictly prohibited
+//  Proprietary and confidential
+//  Written by Pat Kaehuaea, February 2015
+//
+// Implements load generator required in assignment-05. The loadgen
+// application uses the adjacent stats pacakge for storage
+// of counter data and the config package for parsing of
+// command line options. See config pacakge for defaults.
+
 package main
 
 import (
@@ -8,29 +18,16 @@ import (
 	"time"
 )
 
-const KEY_LOOKUP_DIVISOR = 100
-
+const (
+	DEFAULT_DELTA = 1
+	UNIT_CONVERSION_FACTOR = 1000000
+)
 var (
 	counter *stats.Counter
-	period     <-chan time.Time
-	stop       <-chan time.Time
-	client     *http.Client
-	convert    = map[int]string{
-		1: "100s",
-		2: "200s",
-		3: "300s",
-		4: "400s",
-		5: "500s",
-	}
+	period  <-chan time.Time
+	stop    <-chan time.Time
+	client  *http.Client
 )
-
-func key(httpStatusCode int) string {
-	key, ok := convert[httpStatusCode/KEY_LOOKUP_DIVISOR]
-	if !ok {
-		key = stats.ERROR_KEY
-	}
-	return key
-}
 
 func load(url string, burst int) {
 	for {
@@ -49,17 +46,17 @@ func load(url string, burst int) {
 
 func request(url string) {
 	if response, err := client.Get(url); err != nil {
-		counter.Increment(stats.ERROR_KEY, 1)
+		counter.Increment(stats.ERROR_KEY, DEFAULT_DELTA)
 		return
 	} else {
 		defer response.Body.Close()
-		counter.Increment(key(response.StatusCode), 1)
+		counter.Increment(stats.Key(response.StatusCode), DEFAULT_DELTA)
 	}
 }
 
 func init() {
 	counter = stats.New()
-	period = time.Tick(time.Duration((*config.Burst*1000000) / *config.Rate) * time.Microsecond)
+	period = time.Tick(time.Duration((*config.Burst*UNIT_CONVERSION_FACTOR) / *config.Rate) * time.Microsecond)
 	stop = time.Tick(*config.Runtime + *config.LoadTimeoutMS)
 	client = &http.Client{Timeout: *config.LoadTimeoutMS}
 }
@@ -67,11 +64,13 @@ func init() {
 func main() {
 
 	/*
-	   --rate: average rate of requests (per second)
-	   --burst: number of concurrent requests to issue
-	   --timeout-ms: max time to wait for response
-	   --runtime: number of seconds to process
-	   --url: URL to sample
+		Paramters surfaced via config pacakge used in this program:
+
+		*config.Rate: average rate of requests (per second)
+	  	*config.Burst: number of concurrent requests to issue
+	   	*config.LoadTimeout-ms: max time to wait for response
+	   	*config.Runtime: number of seconds to process
+	   	*config.url: URL to sample
 	*/
 
 	load(*config.URL, *config.Burst)
