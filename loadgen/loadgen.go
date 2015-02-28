@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/patkaehuaea/command/config"
 	"github.com/patkaehuaea/command/loadgen/stats"
 	"net/http"
@@ -12,7 +11,7 @@ import (
 const KEY_LOOKUP_DIVISOR = 100
 
 var (
-	statistics *stats.Statistics
+	counter *stats.Counter
 	period     <-chan time.Time
 	stop       <-chan time.Time
 	client     *http.Client
@@ -48,20 +47,18 @@ func load(url string, burst int) {
 	}
 }
 
-func request(url string) (err error) {
-	var response *http.Response
-	if response, err = client.Get(url); err != nil {
-		statistics.Increment(stats.ERROR_KEY, 1)
+func request(url string) {
+	if response, err := client.Get(url); err != nil {
+		counter.Increment(stats.ERROR_KEY, 1)
 		return
+	} else {
+		defer response.Body.Close()
+		counter.Increment(key(response.StatusCode), 1)
 	}
-
-	defer response.Body.Close()
-	statistics.Increment(key(response.StatusCode), 1)
-	return
 }
 
 func init() {
-	statistics = stats.New()
+	counter = stats.New()
 	period = time.Tick(time.Duration((*config.Burst*1000000) / *config.Rate) * time.Microsecond)
 	stop = time.Tick(*config.Runtime + *config.LoadTimeoutMS)
 	client = &http.Client{Timeout: *config.LoadTimeoutMS}
@@ -78,7 +75,7 @@ func main() {
 	*/
 
 	load(*config.URL, *config.Burst)
-	fmt.Println(statistics.String())
+	counter.Print()
 	os.Exit(0)
 
 }
