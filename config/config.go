@@ -103,8 +103,5 @@ func init() {
 	// Will fail to default log configuration as defined by seelog package
 	// if unable to open file. Assumes *LogConf is in SEELOG_CONF_DIR relative to cwd.
 	cwd, _ := os.Getwd()
-	var err error
-	if Logger, err = log.LoggerFromConfigAsFile(filepath.Join(cwd, SEELOG_CONF_DIR, *logConf)); err != nil {
-		log.Warn(err)
-	}
+	Logger, _ = log.LoggerFromConfigAsFile(filepath.Join(cwd, SEELOG_CONF_DIR, *logConf))
 }
