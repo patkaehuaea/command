@@ -19,9 +19,10 @@ import (
 )
 
 const (
-	DEFAULT_DELTA = 1
+	DEFAULT_DELTA          = 1
 	UNIT_CONVERSION_FACTOR = 1000000
 )
+
 var (
 	counter *stats.Counter
 	period  <-chan time.Time
@@ -64,13 +65,13 @@ func init() {
 func main() {
 
 	/*
-		Paramters surfaced via config pacakge used in this program:
+			Paramters surfaced via config pacakge used in this program:
 
-		*config.Rate: average rate of requests (per second)
-	  	*config.Burst: number of concurrent requests to issue
-	   	*config.LoadTimeout-ms: max time to wait for response
-	   	*config.Runtime: number of seconds to process
-	   	*config.url: URL to sample
+			*config.Rate: average rate of requests (per second)
+		  	*config.Burst: number of concurrent requests to issue
+		   	*config.LoadTimeout-ms: max time to wait for response
+		   	*config.Runtime: number of seconds to process
+		   	*config.url: URL to sample
 	*/
 
 	load(*config.URL, *config.Burst)
