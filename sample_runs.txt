@@ -1,0 +1,70 @@
+# Start authserver:
+
+$ cd $GOPATH/src/github.com/patkaehuaea/command/authserver
+$ go install
+$ $GOPATH/bin/authserver --dumpfile ~/users.json &
+
+
+# Start timeserver:
+
+$ cd $GOPATH/src/github.com/patkaehuaea/command/timeserver
+$ go install
+$ $GOPATH/bin/timeserver --max-inflight=80 --avg-response-ms=500ms  --deviation-ms=300ms &
+
+
+# Run load tests:
+
+$ time $GOPATH/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=200 --burst=20 --timeout-ms=1000ms
+Total:   2122
+100s:    0
+200s:    1433
+300s:    0
+400s:    0
+500s:    654
+Errors:  35
+
+real    0m11.012s
+user    0m0.399s
+sys 0m0.257s
+
+$ time $GOPATH/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=2000 --burst=20 --timeout-ms=1000ms
+Total:   17880
+100s:    0
+200s:    1297
+300s:    0
+400s:    0
+500s:    15053
+Errors:  1530
+
+real    0m11.017s
+user    0m2.621s
+sys 0m4.384s
+
+$ time $GOPATH/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=2000 --burst=20 --timeout-ms=2000ms
+Total:   18220
+100s:    0
+200s:    1315
+300s:    0
+400s:    0
+500s:    15036
+Errors:  1869
+
+real    0m12.041s
+user    0m2.630s
+sys 0m5.350s
+
+
+# Load test with no timeserver running:
+
+$ time $GOPATH/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=200 --burst=20 --timeout-ms=1000ms
+Total:   2000
+100s:    0
+200s:    0
+300s:    0
+400s:    0
+500s:    0
+Errors:  2000
+
+real    0m11.015s
+user    0m0.218s
+sys 0m0.154s
