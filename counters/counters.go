@@ -5,9 +5,7 @@
 
 package counters
 
-import (
-	"sync"
-)
+import "sync"
 
 const START_VALUE = 0
 
