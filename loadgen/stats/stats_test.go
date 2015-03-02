@@ -81,8 +81,8 @@ func increment(c *stats.Counter, data map[string]int) {
 
 func TestCopy(t *testing.T) {
 	counter := stats.New()
-    increment(counter, dataSetOne)
-    copy := counter.Copy()
+	increment(counter, dataSetOne)
+	copy := counter.Copy()
 	for k, v := range expectedCopy {
 		if v != copy[k] {
 			t.Errorf("copy %s: expected %d, got %d", k, v, copy[k])
@@ -92,8 +92,8 @@ func TestCopy(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	counter := stats.New()
-    increment(counter, dataSetOne)
-    total := counter.Get(stats.TOTAL_KEY)
+	increment(counter, dataSetOne)
+	total := counter.Get(stats.TOTAL_KEY)
 	expected := 146
 	if total != expected {
 		t.Errorf("%s: expected %d, got %d", stats.TOTAL_KEY, expected, total)
