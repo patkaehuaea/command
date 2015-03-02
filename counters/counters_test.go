@@ -3,16 +3,29 @@
 //  Proprietary and confidential
 //  Written by Pat Kaehuaea, February 2015
 //
-// Performs  unit testing of stats package. Package is different
-// than package under test because of an import cycle error that
-// I wasn't able to resolve quickly.
+// Performs  unit testing of stats package. Tests are performed within
+// the context of the load generator application for clarity and ease of use.
+// Please note that this package is separate from counters becase of an import
+// circle error I was unable to resolve. Shouldn't pose a problem as unit tests
+// focus on public interface of counters package.
 
-package stats_test
+package counters_test
 
 import (
-	"github.com/patkaehuaea/command/loadgen/stats"
+	"github.com/patkaehuaea/command/counters"
 	"sync"
 	"testing"
+)
+
+const (
+	TOTAL_KEY   = "Total"
+	KEY_100     = "100s"
+	KEY_200     = "200s"
+	KEY_300     = "300s"
+	KEY_400     = "400s"
+	KEY_500     = "500s"
+	ERROR_KEY   = "Errors"
+	START_VALUE = 0
 )
 
 var (
@@ -73,14 +86,27 @@ var (
 	}
 )
 
-func increment(c *stats.Counter, data map[string]int) {
+func increment(c *counters.Counter, data map[string]int) {
 	for statistic, delta := range data {
+		c.Increment(TOTAL_KEY, delta)
 		c.Increment(statistic, delta)
 	}
 }
 
+func setup() *counters.Counter {
+	keys := []string{
+		TOTAL_KEY,
+		KEY_200,
+		KEY_300,
+		KEY_400,
+		KEY_500,
+		ERROR_KEY,
+	}
+	return counters.New(keys)
+}
+
 func TestCopy(t *testing.T) {
-	counter := stats.New()
+	counter := setup()
 	increment(counter, dataSetOne)
 	copy := counter.Copy()
 	for k, v := range expectedCopy {
@@ -91,17 +117,17 @@ func TestCopy(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	counter := stats.New()
+	counter := setup()
 	increment(counter, dataSetOne)
-	total := counter.Get(stats.TOTAL_KEY)
+	total := counter.Get(TOTAL_KEY)
 	expected := 146
 	if total != expected {
-		t.Errorf("%s: expected %d, got %d", stats.TOTAL_KEY, expected, total)
+		t.Errorf("%s: expected %d, got %d", TOTAL_KEY, expected, total)
 	}
 }
 
 func TestIncrement(t *testing.T) {
-	counter := stats.New()
+	counter := setup()
 	var wg sync.WaitGroup
 	wg.Add(4)
 	go func() {
@@ -132,12 +158,12 @@ func TestIncrement(t *testing.T) {
 }
 
 func TestReset(t *testing.T) {
-	counter := stats.New()
+	counter := setup()
 	increment(counter, dataSetOne)
 	counter.Reset()
 	actual := counter.Copy()
 	for k, v := range actual {
-		if v != stats.START_VALUE {
+		if v != START_VALUE {
 			t.Errorf("counter %s: expected %d, got %d", k, v, actual[k])
 		}
 	}
