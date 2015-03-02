@@ -103,11 +103,12 @@ func (c *Counter) Increment(statistic string, delta int) {
 	c.Unlock()
 }
 
-// Sets statistic to stats.START_VALUE. Callers should use
-// stats.Key function if unsure if which statistics are present.
-func (c *Counter) Reset(statistic string) {
+// Resets all key-value pairs in c.Counter to stats.START_VALUE.
+func (c *Counter) Reset() {
 	c.Lock()
-	c.counters[statistic] = START_VALUE
+	for k, _ := range c.counters {
+		c.counters[k] = START_VALUE
+	}
 	c.Unlock()
 }
 
