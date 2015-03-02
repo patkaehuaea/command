@@ -20,57 +20,41 @@ $ $GOPATH/bin/timeserver --max-inflight=80 --avg-response-ms=500ms  --deviation-
 
 $ cd $GOPATH/src/github.com/patkaehuaea/command/loadgen
 
-$ time $GOPATH/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=200 --burst=20 --timeout-ms=1000ms
+$ time /Users/kaehp001/go/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=200 --burst=20 --timeout-ms=1000ms
 Total:   2200
 100s:    0
-200s:    1461
+200s:    1441
 300s:    0
 400s:    0
-500s:    646
-Errors:  36
-
-real    0m11.015s
-user    0m0.413s
-sys 0m0.273s
-
-$ time $GOPATH/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=2000 --burst=20 --timeout-ms=1000ms
-Total:   16680
-100s:    0
-200s:    1214
-300s:    0
-400s:    0
-500s:    13544
-Errors:  1917
+500s:    637
+Errors:  44
 
 real    0m11.012s
-user    0m2.314s
-sys 0m4.794s
+user    0m0.399s
+sys 0m0.262s
 
-$ time $GOPATH/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=2000 --burst=20 --timeout-ms=2000ms
-Total:   18280
+$ time /Users/kaehp001/go/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=2000 --burst=20 --timeout-ms=1000ms
+Total:   16160
 100s:    0
-200s:    1328
+200s:    1134
 300s:    0
 400s:    0
-500s:    15026
-Errors:  1926
+500s:    13136
+Errors:  1890
 
-real    0m12.036s
-user    0m2.517s
-sys 0m5.267s
+real    0m11.038s
+user    0m2.236s
+sys 0m5.175s
 
-
-# Load test with no timeserver running:
-
-$ time $GOPATH/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=200 --burst=20 --timeout-ms=1000ms
-Total:   2220
+$ time /Users/kaehp001/go/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=2000 --burst=2 --timeout-ms=500ms
+Total:   6084
 100s:    0
-200s:    0
+200s:    111
 300s:    0
 400s:    0
-500s:    0
-Errors:  2020
+500s:    1906
+Errors:  4063
 
-real    0m11.117s
-user    0m0.247s
-sys 0m0.169s
+real    0m10.508s
+user    0m0.665s
+sys 0m8.874s
