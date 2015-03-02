@@ -14,6 +14,10 @@ type Counter struct {
 	counters map[string]int
 }
 
+// Takes a slice of string and loads into map
+// of string to int while setting value to START_VALUE.
+// Allows for generalized use of counters beyond a single
+// project.
 func New(keys []string) (c *Counter) {
 	c = &Counter{counters: make(map[string]int)}
 	for _, element := range keys {
