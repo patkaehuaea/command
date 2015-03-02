@@ -1,18 +1,24 @@
+# Build everything:
+
+cd $GOPATH/src/github.com/patkaehuaea/command/
+$ make
+
+
 # Start authserver:
 
 $ cd $GOPATH/src/github.com/patkaehuaea/command/authserver
-$ go install
 $ $GOPATH/bin/authserver --dumpfile ~/users.json &
 
 
 # Start timeserver:
 
 $ cd $GOPATH/src/github.com/patkaehuaea/command/timeserver
-$ go install
 $ $GOPATH/bin/timeserver --max-inflight=80 --avg-response-ms=500ms  --deviation-ms=300ms &
 
 
 # Run load tests:
+
+$ cd $GOPATH/src/github.com/patkaehuaea/command/loadgen
 
 $ time $GOPATH/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=200 --burst=20 --timeout-ms=1000ms
 Total:   2122
