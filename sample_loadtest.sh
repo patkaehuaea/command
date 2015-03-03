@@ -4,12 +4,12 @@
 cd $GOPATH/src/github.com/patkaehuaea/command/
 make
 
-kill `pgrep authserver`
+pkill authserver
 echo "Starting authserver."
 cd $GOPATH/src/github.com/patkaehuaea/command/authserver
 $GOPATH/bin/authserver --dumpfile ~/users.json > /dev/null 2>&1 &
 
-kill `pgrep timeserver`
+pkill timeserver
 echo "Starting timeserver."
 cd $GOPATH/src/github.com/patkaehuaea/command/timeserver
 $GOPATH/bin/timeserver --max-inflight=80 --avg-response-ms=500ms  --deviation-ms=300ms > /dev/null 2>&1 &
