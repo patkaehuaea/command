@@ -1,60 +1,44 @@
-# Build everything:
-
-cd $GOPATH/src/github.com/patkaehuaea/command/
-$ make
-
-
-# Start authserver:
-
-$ cd $GOPATH/src/github.com/patkaehuaea/command/authserver
-$ $GOPATH/bin/authserver --dumpfile ~/users.json > /dev/null 2>1 &
-
-
-# Start timeserver:
-
-$ cd $GOPATH/src/github.com/patkaehuaea/command/timeserver
-$ $GOPATH/bin/timeserver --max-inflight=80 --avg-response-ms=500ms  --deviation-ms=300ms > /dev/null 2>&1 &
-
-
-# Run load tests:
-
-$ cd $GOPATH/src/github.com/patkaehuaea/command/loadgen
-
-$ time /Users/kaehp001/go/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=200 --burst=20 --timeout-ms=1000ms
+$ cd $GOPATH/src/github.com/patkaehuaea/command/
+$ ./sample_loadtest.sh
+GOPATH=/net/metis/home/pakaehua/go go fmt ./...
+GOPATH=/net/metis/home/pakaehua/go go install ./...
+Starting authserver.
+Starting timeserver.
+time /net/metis/home/pakaehua/go/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=200 --burst=20 --timeout-ms=1000ms
 Total:   2200
 100s:    0
-200s:    1441
+200s:    1455
 300s:    0
 400s:    0
-500s:    637
-Errors:  44
+500s:    629
+Errors:  56
 
-real    0m11.012s
-user    0m0.399s
-sys 0m0.262s
+real    0m11.013s
+user    0m0.344s
+sys 0m0.424s
 
-$ time /Users/kaehp001/go/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=2000 --burst=20 --timeout-ms=1000ms
-Total:   16160
+time /net/metis/home/pakaehua/go/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=2000 --burst=20 --timeout-ms=1000ms
+Total:   22000
 100s:    0
-200s:    1134
+200s:    1639
 300s:    0
 400s:    0
-500s:    13136
-Errors:  1890
+500s:    20240
+Errors:  43
 
-real    0m11.038s
-user    0m2.236s
-sys 0m5.175s
+real    0m11.013s
+user    0m4.108s
+sys 0m2.712s
 
-$ time /Users/kaehp001/go/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=2000 --burst=2 --timeout-ms=500ms
-Total:   6084
+time /net/metis/home/pakaehua/go/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=2000 --burst=2 --timeout-ms=500ms
+Total:   14416
 100s:    0
-200s:    111
+200s:    157
 300s:    0
 400s:    0
-500s:    1906
-Errors:  4063
+500s:    4092
+Errors:  10160
 
-real    0m10.508s
-user    0m0.665s
-sys 0m8.874s
+real    0m10.512s
+user    0m2.068s
+sys 0m38.086s
