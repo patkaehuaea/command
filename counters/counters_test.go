@@ -118,9 +118,19 @@ func TestCopy(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	counter := setup()
-	increment(counter, dataSetOne)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		increment(counter, dataSetOne)
+	}()
+	go func() {
+		defer wg.Done()
+		increment(counter, dataSetTwo)
+	}()
+	wg.Wait()
 	total := counter.Get(TOTAL_KEY)
-	expected := 146
+	expected := 67
 	if total != expected {
 		t.Errorf("%s: expected %d, got %d", TOTAL_KEY, expected, total)
 	}
