@@ -15,6 +15,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	log "github.com/cihub/seelog"
@@ -22,6 +23,7 @@ import (
 	"github.com/patkaehuaea/command/authserver/client"
 	"github.com/patkaehuaea/command/authserver/people"
 	"github.com/patkaehuaea/command/config"
+	"github.com/patkaehuaea/command/counters"
 	"github.com/patkaehuaea/command/timeserver/cookie"
 	"github.com/patkaehuaea/command/timeserver/stats"
 	"html/template"
@@ -33,17 +35,31 @@ import (
 )
 
 const (
+	DEFAULT_DELTA        = 1
 	VERSION_NUMBER       = "v2.3.2"
 	TEMPL_DIR            = "templates"
 	TEMPL_FILE_EXTENSION = ".tmpl"
 	LOCAL_TIME_LAYOUT    = "3:04:05 PM"
 	UTC_TIME_LAYOUT      = "15:04:05 UTC"
+	LOGIN_COUNTER        = "login"
+	TIME_USER_COUNTER    = "time-user"
+	TIME_ANON_COUNTER    = "time-anon"
+	KEY_200              = "200s"
+	KEY_500              = "500s"
 )
 
 var (
-	authClient *client.AuthClient
-	inFlight   *stats.ConcurrentRequests
-	templates  *template.Template
+	authClient  *client.AuthClient
+	counter     *counters.Counter
+	inFlight    *stats.ConcurrentRequests
+	counterKeys = []string{
+		LOGIN_COUNTER,
+		TIME_USER_COUNTER,
+		TIME_ANON_COUNTER,
+		KEY_200,
+		KEY_500,
+	}
+	templates *template.Template
 )
 
 // Credit: http://goo.gl/MsxPHk
@@ -90,16 +106,19 @@ func handleDefault(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	counter.Increment(KEY_200, DEFAULT_DELTA)
 	log.Debug("timeserver: " + name + " viewing site.")
 	renderTemplate(w, "greetings", name)
 }
 
 func handleDisplayLogin(w http.ResponseWriter, r *http.Request) {
+	counter.Increment(KEY_200, DEFAULT_DELTA)
 	log.Info("timeserver: Display login handler called.")
 	renderTemplate(w, "login", "What is your name, Earthling?")
 }
 
 func handleProcessLogin(w http.ResponseWriter, r *http.Request) {
+	counter.Increment(LOGIN_COUNTER, DEFAULT_DELTA)
 	log.Info("timeserver: Process login handler called.")
 
 	name := r.FormValue("name")
@@ -109,6 +128,7 @@ func handleProcessLogin(w http.ResponseWriter, r *http.Request) {
 		uuid := people.UUID()
 
 		if err := authClient.Set(uuid, name); err != nil {
+			counter.Increment(KEY_500, DEFAULT_DELTA)
 			http.SetCookie(w, cookie.NewCookie(cookie.DELETE_VALUE, cookie.DELETE_AGE))
 			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate(w, "500", nil)
@@ -128,10 +148,26 @@ func handleProcessLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
+	counter.Increment(KEY_200, DEFAULT_DELTA)
 	log.Info("timeserver: Logout handler called.")
 
 	http.SetCookie(w, cookie.NewCookie(cookie.DELETE_VALUE, cookie.DELETE_AGE))
 	renderTemplate(w, "logged-out", nil)
+}
+
+func handleMonitor(w http.ResponseWriter, r *http.Request) {
+	log.Info("timeserver: Monitor called.")
+
+	copy := counter.Copy()
+	data, err := json.Marshal(&copy)
+	if err != nil {
+		counter.Increment(KEY_500, DEFAULT_DELTA)
+		w.WriteHeader(http.StatusInternalServerError)
+		renderTemplate(w, "500", nil)
+		return
+	}
+	counter.Increment(KEY_200, DEFAULT_DELTA)
+	w.Write(data)
 }
 
 func handleNotFound(w http.ResponseWriter, r *http.Request) {
@@ -143,6 +179,7 @@ func handleNotFound(w http.ResponseWriter, r *http.Request) {
 
 func handleTime(w http.ResponseWriter, r *http.Request) {
 	log.Info("timeserver: Time handler called.")
+	counter.Increment(KEY_200, DEFAULT_DELTA)
 
 	// Simulate load with delay function.
 	delay(*config.AvgRespMS, *config.DeviationMS)
@@ -150,7 +187,10 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 	name, err := getUUIDThenName(r)
 
 	if err != nil {
+		counter.Increment(TIME_ANON_COUNTER, DEFAULT_DELTA)
 		http.SetCookie(w, cookie.NewCookie(cookie.DELETE_VALUE, cookie.DELETE_AGE))
+	} else {
+		counter.Increment(TIME_USER_COUNTER, DEFAULT_DELTA)
 	}
 
 	// If name is blank, template will not render
@@ -166,6 +206,7 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 // credit: http://tinyurl.com/kwc4hls
 func logFileRequest(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		counter.Increment(KEY_200, DEFAULT_DELTA)
 		log.Info("timeserver: File server called.")
 		h.ServeHTTP(w, r)
 	})
@@ -185,6 +226,7 @@ func throttle(fn func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc 
 
 		if err := inFlight.Add(); err != nil {
 			log.Error(err)
+			counter.Increment(KEY_500, DEFAULT_DELTA)
 			w.WriteHeader(http.StatusInternalServerError)
 			renderTemplate(w, "500", nil)
 			return
@@ -210,6 +252,7 @@ func init() {
 	}
 
 	log.ReplaceLogger(config.Logger)
+	counter = counters.New(counterKeys)
 	authClient = client.NewAuthClient(*config.AuthHost, *config.AuthPort, *config.AuthTimeoutMS)
 }
 
@@ -242,6 +285,7 @@ func main() {
 	r.HandleFunc("/login", handleDisplayLogin).Methods("GET")
 	r.HandleFunc("/login", handleProcessLogin).Methods("POST")
 	r.HandleFunc("/logout", handleLogout)
+	r.HandleFunc("/monitor", handleMonitor)
 	if *config.MaxInFlight != 0 {
 		log.Infof("%s - %d", "timeserver: Max concurrent time connections", *config.MaxInFlight)
 		inFlight = stats.NewCR(*config.MaxInFlight)
