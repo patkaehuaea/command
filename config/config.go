@@ -38,6 +38,11 @@ const (
 	LOAD_RUNTIME    = 10 * time.Second
 	LOAD_URL        = "http://localhost:8080/time"
 
+	// Constants for monitorserver:
+	MONITOR_TARGETS      = ""
+	MONITOR_INTERVAL_SEC = 1 * time.Second
+	MONITOR_RUNTIME_SEC  = 10 * time.Second
+
 	// Constants shared accross applications:
 	SEELOG_CONF_DIR  = "etc"
 	SEELOG_CONF_FILE = "seelog.xml"
@@ -62,6 +67,11 @@ var (
 	LoadTimeoutMS *time.Duration
 	Runtime       *time.Duration
 	URL           *string
+
+	// Variables for monitorserver:
+	MonTargets *string
+	MonIntSec  *time.Duration
+	MonRunSec  *time.Duration
 
 	// Variables shared across applications:
 	TimePort *string
@@ -91,6 +101,11 @@ func init() {
 	LoadTimeoutMS = flag.Duration("timeout-ms", LOAD_TIMEOUT_MS, "Max time to wait for response.")
 	Runtime = flag.Duration("runtime", LOAD_RUNTIME, "Number of seconds to process.")
 	URL = flag.String("url", LOAD_URL, "URL to sample.")
+
+	// Parameters for monitorserver:
+	MonTargets = flag.String("targets", MONITOR_TARGETS, "A comma-separated list of URLs to monitor.")
+	MonIntSec = flag.Duration("sample-interval-sec", MONITOR_INTERVAL_SEC, "The interval (in seconds) between sample requests.")
+	MonRunSec = flag.Duration("runtime-sec", MONITOR_RUNTIME_SEC, "Number of seconds to process.")
 
 	// Shared parameters:
 	AuthPort = flag.String("authport", AUTH_PORT, "Auth server binds to this port.")
