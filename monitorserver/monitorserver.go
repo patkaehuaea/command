@@ -3,10 +3,10 @@
 //  Proprietary and confidential
 //  Written by Pat Kaehuaea, February 2015
 //
-// Implements load generator required in assignment-05. The loadgen
-// application uses the adjacent stats pacakge for storage
-// of counter data and the config package for parsing of
-// command line options. See config pacakge for defaults.
+// Implements monitorserver required in assignment-06. The
+// application uses the adjacent metrics pacakge for storage
+// of collected monitoring data and the config package for parsing
+// of command line options. See config pacakge for defaults.
 
 package main
 
@@ -14,7 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/patkaehuaea/command/config"
-	"github.com/patkaehuaea/command/monitorserver/stats"
+	"github.com/patkaehuaea/command/monitorserver/metrics"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -26,9 +26,12 @@ var (
 	period <-chan time.Time
 	stop   <-chan time.Time
 	client *http.Client
-	data   *stats.MonitorData
+	data   *metrics.Data
 )
 
+// Launches concurrent requests for each url
+// in urls every period. Runs until receives
+// stop.
 func monitor(urls []string) {
 	for {
 		for _, url := range urls {
@@ -46,7 +49,7 @@ func monitor(urls []string) {
 
 func request(url string) {
 
-    now := time.Now()
+	now := time.Now()
 
 	response, err := http.Get(url)
 	if err != nil {
@@ -66,7 +69,7 @@ func request(url string) {
 	}
 
 	for counter, value := range dict {
-		data.Add(url, counter, stats.Sample{Time: now, Value: value})
+		data.Add(url, counter, metrics.Sample{Time: now, Value: value})
 	}
 }
 
@@ -85,7 +88,7 @@ func main() {
 	*/
 
 	targets := strings.Split(*config.MonTargets, ",")
-	data = stats.New(targets)
+	data = metrics.New(targets)
 	monitor(targets)
 	data.Print()
 	os.Exit(0)
