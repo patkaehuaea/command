@@ -25,7 +25,7 @@ import (
 	"github.com/patkaehuaea/command/config"
 	"github.com/patkaehuaea/command/counters"
 	"github.com/patkaehuaea/command/timeserver/cookie"
-	"github.com/patkaehuaea/command/timeserver/stats"
+	"github.com/patkaehuaea/command/timeserver/throttle"
 	"html/template"
 	"math/rand"
 	"net/http"
@@ -58,7 +58,7 @@ var (
 		KEY_200,
 		KEY_500,
 	}
-	inFlight  *stats.ConcurrentRequests
+	inFlight  *throttle.ConcurrentRequests
 	templates *template.Template
 )
 
@@ -197,6 +197,26 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "time", params)
 }
 
+func limit(fn func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		if err := inFlight.Add(); err != nil {
+			log.Error(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			renderTemplate(w, "500", nil)
+			counter.Increment(KEY_500, DEFAULT_DELTA)
+			return
+		}
+
+		fn(w, r)
+		// Only subtract if stat was incrememted otherwise
+		// may attempt to subtract below throttle.MIN_VALUE.
+		if err := inFlight.Subtract(); err != nil {
+			log.Error(err)
+		}
+	}
+}
+
 // credit: http://tinyurl.com/kwc4hls
 func logFileRequest(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -212,26 +232,6 @@ func renderTemplate(w http.ResponseWriter, templ string, d interface{}) {
 	if err != nil {
 		log.Error("timeserver: Error looking for template: " + templ)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-func throttle(fn func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		if err := inFlight.Add(); err != nil {
-			log.Error(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			renderTemplate(w, "500", nil)
-			counter.Increment(KEY_500, DEFAULT_DELTA)
-			return
-		}
-
-		fn(w, r)
-		// Only subtract if stat was incrememted otherwise
-		// may attempt to subtract below stats.MIN_VALUE.
-		if err := inFlight.Subtract(); err != nil {
-			log.Error(err)
-		}
 	}
 }
 
@@ -282,8 +282,8 @@ func main() {
 	r.HandleFunc("/monitor", handleMonitor)
 	if *config.MaxInFlight != 0 {
 		log.Infof("%s - %d", "timeserver: Max concurrent time connections", *config.MaxInFlight)
-		inFlight = stats.NewCR(*config.MaxInFlight)
-		r.HandleFunc("/time", throttle(handleTime))
+		inFlight = throttle.New(*config.MaxInFlight)
+		r.HandleFunc("/time", limit(handleTime))
 	}
 	r.HandleFunc("/time", handleTime)
 	r.NotFoundHandler = http.HandlerFunc(handleNotFound)

@@ -3,7 +3,7 @@
 //  Proprietary and confidential
 //  Written by Pat Kaehuaea, February 2015
 
-package stats
+package throttle
 
 import (
 	"errors"
@@ -22,7 +22,7 @@ type ConcurrentRequests struct {
 	max   int
 }
 
-func NewCR(max int) (cr *ConcurrentRequests) {
+func New(max int) (cr *ConcurrentRequests) {
 	cr = &ConcurrentRequests{count: START_VALUE, max: max}
 	return
 }
