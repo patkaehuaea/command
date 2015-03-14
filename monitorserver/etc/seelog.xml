@@ -1,0 +1,12 @@
+<seelog>
+    <outputs formatid="common">
+        <filter levels="info,warn,error,critical">
+            <!-- Useful to output to console as well as log file.  -->
+            <file path="out/monitorserver.log"/>
+            <console/>
+        </filter>
+    </outputs>
+    <formats>
+        <format id="common" format="%Date%t%Time%t[%LEVEL]%t%File:%Func:%Line%t%Msg%n"/>
+    </formats>
+</seelog>

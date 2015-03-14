@@ -37,6 +37,7 @@ import (
 const (
 	DEFAULT_DELTA        = 1
 	KEY_200              = "200s"
+	KEY_400              = "400s"
 	KEY_500              = "500s"
 	LOCAL_TIME_LAYOUT    = "3:04:05 PM"
 	LOGIN_COUNTER        = "login"
@@ -56,6 +57,7 @@ var (
 		TIME_USER_COUNTER,
 		TIME_ANON_COUNTER,
 		KEY_200,
+		KEY_400,
 		KEY_500,
 	}
 	inFlight  *throttle.ConcurrentRequests
@@ -131,11 +133,13 @@ func handleProcessLogin(w http.ResponseWriter, r *http.Request) {
 			renderTemplate(w, "500", nil)
 			log.Error(err)
 			counter.Increment(KEY_500, DEFAULT_DELTA)
+			counter.Increment(LOGIN_COUNTER, DEFAULT_DELTA)
 			return
 		}
 		http.SetCookie(w, cookie.NewCookie(uuid, cookie.MAX_AGE))
 		http.Redirect(w, r, "/", http.StatusFound)
 		log.Info("timeserver: " + name + " registered on site.")
+		counter.Increment(KEY_200, DEFAULT_DELTA)
 		counter.Increment(LOGIN_COUNTER, DEFAULT_DELTA)
 		return
 	}
@@ -154,27 +158,28 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 
 func handleMonitor(w http.ResponseWriter, r *http.Request) {
 	log.Info("timeserver: Monitor called.")
-	counter.Increment(KEY_200, DEFAULT_DELTA)
 	copy := counter.Copy()
 	data, err := json.Marshal(&copy)
 	if err != nil {
+		log.Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		renderTemplate(w, "500", nil)
 		counter.Increment(KEY_500, DEFAULT_DELTA)
 		return
 	}
 	w.Write(data)
+	counter.Increment(KEY_200, DEFAULT_DELTA)
 }
 
 func handleNotFound(w http.ResponseWriter, r *http.Request) {
 	log.Info("timeserver: Not found handler called.")
 	w.WriteHeader(http.StatusNotFound)
 	renderTemplate(w, "404", nil)
+	counter.Increment(KEY_400, DEFAULT_DELTA)
 }
 
 func handleTime(w http.ResponseWriter, r *http.Request) {
 	log.Info("timeserver: Time handler called.")
-	counter.Increment(KEY_200, DEFAULT_DELTA)
 
 	// Simulate load with delay function.
 	delay(*config.AvgRespMS, *config.DeviationMS)
@@ -195,6 +200,7 @@ func handleTime(w http.ResponseWriter, r *http.Request) {
 		"name":      name,
 	}
 	renderTemplate(w, "time", params)
+	counter.Increment(KEY_200, DEFAULT_DELTA)
 }
 
 func limit(fn func(w http.ResponseWriter, r *http.Request)) http.HandlerFunc {

@@ -12,7 +12,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	log "github.com/cihub/seelog"
 	"github.com/patkaehuaea/command/config"
 	"github.com/patkaehuaea/command/monitorserver/metrics"
 	"io/ioutil"
@@ -29,9 +29,6 @@ var (
 	data   *metrics.Data
 )
 
-// Launches concurrent requests for each url
-// in urls every period. Runs until receives
-// stop.
 func monitor(urls []string) {
 	for {
 		for _, url := range urls {
@@ -53,18 +50,20 @@ func request(url string) {
 
 	response, err := http.Get(url)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Error("monitorserver: " + err.Error())
 		return
 	}
 
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
+		log.Error("monitorserver: " + err.Error())
 		return
 	}
 
 	dict := make(map[string]int)
 	if err := json.Unmarshal(body, &dict); err != nil {
+		log.Error("monitorserver: " + err.Error())
 		return
 	}
 
@@ -74,6 +73,12 @@ func request(url string) {
 }
 
 func init() {
+	log.ReplaceLogger(config.Logger)
+	if *config.MonTargets == config.MONITOR_TARGETS {
+		log.Critical("monitorserver: No targets specified.")
+		os.Exit(1)
+	}
+
 	period = time.Tick(*config.MonIntSec)
 	stop = time.Tick(*config.MonRunSec)
 }

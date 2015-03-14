@@ -57,18 +57,21 @@ func handleGetUser(w http.ResponseWriter, r *http.Request) {
 		log.Debug("authserver: Found valid uuid: " + uuid)
 		w.WriteHeader(http.StatusOK)
 		io.WriteString(w, users.Name(uuid))
+		counter.Increment(KEY_200, DEFAULT_DELTA)
 	} else {
 		log.Debug("authserver: UUID not valid, or not found in users.")
 		w.WriteHeader(http.StatusBadRequest)
+		// Future action item to break out 400 case
+		// and no-cookie case. Avoiding incurring
+		// additional change late in release cycle.
+		counter.Increment(KEY_400, DEFAULT_DELTA)
 		counter.Increment(NO_COOKIE_COUNTER, DEFAULT_DELTA)
 	}
-	counter.Increment(KEY_200, DEFAULT_DELTA)
 	counter.Increment(GET_COOKIE_COUNTER, DEFAULT_DELTA)
 }
 
 func handleMonitor(w http.ResponseWriter, r *http.Request) {
 	log.Info("authserver: Monitor called.")
-	counter.Increment(KEY_200, DEFAULT_DELTA)
 	copy := counter.Copy()
 	data, err := json.Marshal(&copy)
 	if err != nil {
@@ -77,6 +80,7 @@ func handleMonitor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(data)
+	counter.Increment(KEY_200, DEFAULT_DELTA)
 }
 
 func handleSetUser(w http.ResponseWriter, r *http.Request) {
@@ -88,11 +92,12 @@ func handleSetUser(w http.ResponseWriter, r *http.Request) {
 	if people.IsValidUUID(uuid) && people.IsValidName(name) {
 		users.Add(uuid, name)
 		w.WriteHeader(http.StatusOK)
+		counter.Increment(KEY_200, DEFAULT_DELTA)
 	} else {
 		log.Debug("authserver: Invalid uuid and/or name.")
 		w.WriteHeader(http.StatusBadRequest)
+		counter.Increment(KEY_400, DEFAULT_DELTA)
 	}
-	counter.Increment(KEY_200, DEFAULT_DELTA)
 	counter.Increment(SET_COOKIE_COUNTER, DEFAULT_DELTA)
 }
 

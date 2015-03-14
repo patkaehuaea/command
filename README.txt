@@ -41,9 +41,14 @@ $ ./start.sh
 
 Launch a load test:
 
-$ cd $GOPATH/src/github.com/patkaehuaea/command/
+$ cd $GOPATH/src/github.com/patkaehuaea/command/loadgen
 $ $GOPATH/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=200 --burst=20 --timeout-ms=1000ms
 
+
+Retrieve monitor stats from both servers:
+
+$ cd $GOPATH/src/github.com/patkaehuaea/command/monitorserver
+$ $GOPATH/bin/monitorserver --targets http://localhost:8080/monitor,http://localhost:9080/monitor
 
 
 Stop both servers:
@@ -80,3 +85,10 @@ Instructions for running loadgen:
 $ cd $GOPATH/src/github.com/patkaehuaea/command/loadgen
 $ go install
 $ $GOPATH/bin/loadgen --url='http://localhost:8080/time' --runtime=10s --rate=200 --burst=20 --timeout-ms=1000ms
+
+
+Instructions for running monitorserver:
+
+$ cd $GOPATH/src/github.com/patkaehuaea/command/monitorserver
+$ $GOPATH/bin/monitorserver --targets http://localhost:8080/monitor,http://localhost:9080/monitor --sample-interval-sec 1s --runtime-sec 2s
+
