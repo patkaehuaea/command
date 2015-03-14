@@ -8,8 +8,11 @@ Timeserver will run on defaults with no parameters passed, but authserver must r
 or execution will halt. The functionality implemented by each server is described in the assignment-04
 specification: http://goo.gl/ZmC2YD.
 
-The load generator described in assignment-05 is also included in this repository with functionality described
-in: http://goo.gl/dlg5ml.
+The load generator described in assignment-05, and monitorserver in assignment-06 are also included in this repository with functionality described
+in the following:
+
+loadgen - http://goo.gl/dlg5ml
+monitorserver - http://goo.gl/oJm1GA
 
 Please review the provided specification link for detailed list of supported features.
 
